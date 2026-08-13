@@ -235,6 +235,11 @@ ein, bevor sich jemand anmelden konnte.
 Wer Timer erstellen darf, steht in `OFFICER_IDS`. Ist die Liste leer, darf jeder
 mit dem Recht *Server verwalten*.
 
+**Absagen darf nur, wer den Timer erstellt hat** — auch kein Offizier sonst.
+Der Knopf steht zwar unter jeder Nachricht, weist aber jeden anderen ab und
+nennt den Ersteller. Die Kehrseite: ist derjenige nicht erreichbar, lässt sich
+der Timer im Discord nicht mehr stoppen und friert zur Sperrfrist mit Ping ein.
+
 ### Item-Bilder statt Emojis
 
 Jede Waffe trägt ihr echtes Albion-Item-Bild — in der Aufstellung, im Ping

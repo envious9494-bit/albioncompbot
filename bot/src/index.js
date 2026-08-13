@@ -677,9 +677,11 @@ async function handleButton(interaction) {
       await interaction.reply({ content: 'Event nicht gefunden.', flags: MessageFlags.Ephemeral });
       return;
     }
-    if (event.created_by !== interaction.user.id && !(await isOfficer(interaction))) {
+    // Bewusst nur der Ersteller - kein Offiziersrecht daneben. Wer den
+    // Timer gesetzt hat, weiss als Einziger sicher, ob er noch gilt.
+    if (event.created_by !== interaction.user.id) {
       await interaction.reply({
-        content: 'Absagen darf nur, wer den Timer erstellt hat.',
+        content: `Absagen darf nur, wer den Timer erstellt hat — das war <@${event.created_by}>.`,
         flags: MessageFlags.Ephemeral,
       });
       return;
