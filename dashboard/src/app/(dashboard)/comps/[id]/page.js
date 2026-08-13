@@ -16,7 +16,7 @@ export default async function CompEditorPage({ params }) {
   const [comps, weapons, slots, coverageRows] = await Promise.all([
     sql`select id, name, notes from comp where id = ${compId} and guild_id = ${guild.id}`,
     sql`select id, name, category, item_id, icon from weapon where active order by sort_order, name`,
-    sql`select weapon_id, count, priority, label from comp_slot where comp_id = ${compId} order by sort_order, id`,
+    sql`select weapon_id, alt_weapon_ids, count, priority, label from comp_slot where comp_id = ${compId} order by sort_order, id`,
     sql`select weapon_id, count(*)::int as players from player_weapon where guild_id = ${guild.id} group by weapon_id`,
   ]);
 
@@ -52,6 +52,7 @@ export default async function CompEditorPage({ params }) {
         }))}
         initialSlots={slots.map((slot) => ({
           weaponId: slot.weapon_id,
+          altWeaponIds: slot.alt_weapon_ids ?? [],
           count: slot.count,
           priority: slot.priority,
           label: slot.label ?? '',

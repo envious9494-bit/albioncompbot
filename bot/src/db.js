@@ -214,7 +214,7 @@ export async function createEvent({ compId, compName, title, guildId, channelId,
     `;
 
     const slots = await tx`
-      select weapon_id, count, priority, label
+      select weapon_id, alt_weapon_ids, count, priority, label
       from comp_slot
       where comp_id = ${compId}
       order by sort_order, id
@@ -228,6 +228,7 @@ export async function createEvent({ compId, compName, title, guildId, channelId,
           event_id: event.id,
           slot_index: index++,
           weapon_id: slot.weapon_id,
+          alt_weapon_ids: slot.alt_weapon_ids ?? [],
           priority: slot.priority,
           label: slot.label,
         });
@@ -238,7 +239,7 @@ export async function createEvent({ compId, compName, title, guildId, channelId,
       throw new Error('Diese Comp hat keine Slots. Leg im Dashboard erst Waffen an.');
     }
 
-    await tx`insert into event_slot ${tx(rows, 'event_id', 'slot_index', 'weapon_id', 'priority', 'label')}`;
+    await tx`insert into event_slot ${tx(rows, 'event_id', 'slot_index', 'weapon_id', 'alt_weapon_ids', 'priority', 'label')}`;
     return { ...event, slotCount: rows.length };
   });
 }
@@ -249,8 +250,18 @@ export async function loadEventState(eventId) {
   if (!event) return null;
 
   const slots = await sql`
-    select s.slot_index, s.weapon_id, s.priority, s.label, s.locked_discord_id,
-           w.name as weapon_name, w.category, w.icon, w.emoji
+    select s.slot_index, s.weapon_id, s.alt_weapon_ids, s.priority, s.label,
+           s.locked_discord_id, s.assigned_weapon_id,
+           w.name as weapon_name, w.category, w.icon, w.emoji,
+           -- Namen und Bilder aller zugelassenen Waffen, erste Wahl zuerst.
+           -- Ohne die kann die Anzeige "Axt / Realmbreaker" nicht schreiben.
+           (
+             select coalesce(json_agg(json_build_object(
+                      'id', a.id, 'name', a.name, 'icon', coalesce(a.emoji, a.icon)
+                    ) order by ord), '[]'::json)
+             from unnest(array[s.weapon_id] || s.alt_weapon_ids) with ordinality as u(wid, ord)
+             join weapon a on a.id = u.wid
+           ) as optionen
     from event_slot s
     join weapon w on w.id = s.weapon_id
     where s.event_id = ${eventId}
@@ -300,7 +311,8 @@ export async function saveAssignments(eventId, slots) {
       await tx`
         update event_slot
         set assigned_discord_id = ${slot.discordId},
-            assigned_rating = ${slot.rating}
+            assigned_rating = ${slot.rating},
+            assigned_weapon_id = ${slot.discordId ? slot.weaponId : null}
         where event_id = ${eventId} and slot_index = ${slot.slotIndex}
       `;
     }

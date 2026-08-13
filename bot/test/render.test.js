@@ -251,3 +251,51 @@ describe('hashComposition', () => {
     assert.equal(hashComposition(ev, basis, []), hashComposition(ev, basis, []));
   });
 });
+
+describe('Plätze mit mehreren zugelassenen Waffen', () => {
+  const optionen = [
+    { id: 1, name: 'Axt', icon: '🪓' },
+    { id: 2, name: 'Realmbreaker', icon: '⚔️' },
+  ];
+
+  function felder(embed) {
+    return (embed.toJSON().fields ?? []).find((f) => f.name === 'Aufstellung').value;
+  }
+
+  it('nennt solange beide Waffen, wie der Platz frei ist', () => {
+    const k = {
+      slots: [slot(0, { weaponName: 'Axt', optionen })],
+      bench: [],
+      filled: 0,
+      total: 1,
+    };
+    assert.match(felder(buildEventEmbed(event(), k, [])), /Axt \/ Realmbreaker/);
+  });
+
+  it('zeigt nur noch die gespielte Waffe, sobald jemand drauf steht', () => {
+    const k = {
+      slots: [
+        slot(0, {
+          weaponId: 2,
+          weaponName: 'Realmbreaker',
+          optionen,
+          discordId: '1',
+          displayName: 'Kaltblut',
+          rating: 9,
+        }),
+      ],
+      bench: [],
+      filled: 1,
+      total: 1,
+    };
+    const wert = felder(buildEventEmbed(event(), k, []));
+    assert.match(wert, /Realmbreaker/);
+    assert.doesNotMatch(wert, /Axt \/ /, 'nicht mehr beide, wenn besetzt');
+    assert.match(wert, /Kaltblut/);
+  });
+
+  it('laesst einen Platz ohne Alternativen unveraendert', () => {
+    const k = { slots: [slot(0)], bench: [], filled: 0, total: 1 };
+    assert.match(felder(buildEventEmbed(event(), k, [])), /\*\*Broadsword\*\* — \*frei\*/);
+  });
+});

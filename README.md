@@ -35,8 +35,13 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
 - **Priorität 1–5 pro Slot.** Auf einem Prio-1-Slot zählt ein Skillpunkt doppelt
   so viel wie auf Prio 5. Wenn zu wenige da sind, bleiben die unwichtigen Slots
   zuerst leer.
-- **Wer die Waffe nicht im Profil hat, wird nie zugeordnet** — er landet auf der
-  Bank, egal wie leer der Slot ist.
+- **Ein Platz kann mehrere Waffen zulassen.** Axt *oder* Realmbreaker tun
+  dasselbe — im Comp-Editor trägst du unter der Zeile Alternativen ein.
+  Besetzt wird der Platz trotzdem nur einmal, und zwar auf der Waffe, die die
+  Person am besten kann. Solange er frei ist, stehen alle zugelassenen Waffen
+  dran; sobald jemand drauf steht, nur noch dessen.
+- **Wer keine der zugelassenen Waffen im Profil hat, wird nie zugeordnet** — er
+  landet auf der Bank, egal wie leer der Slot ist.
 - **Festlegungen des Leaders gewinnen.** Ein im Dashboard festgenagelter Spieler
   bleibt stehen, der Rest wird drumherum neu optimiert.
 - Die Bank ist nach dem besten Skill auf einer der gesuchten Waffen sortiert —
@@ -56,7 +61,7 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
    das legt alle Tabellen an. Die Waffen kommen später per Knopfdruck im
    Dashboard dazu.
    Bei einer Datenbank, die schon vor diesen Nachträgen angelegt wurde,
-   zusätzlich `db/002_bot_status.sql` bis `db/009_weapon_emoji.sql` der Reihe
+   zusätzlich `db/002_bot_status.sql` bis `db/010_slot_alternativen.sql` der Reihe
    nach einspielen.
 3. Beim Ausführen fragt Supabase nach **Row Level Security**. Antwort:
    *Run and enable RLS*. Warum das wichtig ist, steht unten.

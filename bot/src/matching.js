@@ -95,6 +95,45 @@ export function hungarianMin(cost) {
  *                        (noch) nicht angemeldet hat.
  * @returns {{ slots: Array, bench: Array, filled: number, total: number }}
  */
+/**
+ * Welche zugelassene Waffe kann diese Person am besten?
+ *
+ * Ein Platz darf mehrere Waffen zulassen - eine Axt oder ein Realmbreaker
+ * tun dasselbe. Besetzt wird er trotzdem nur einmal, und zwar auf der
+ * Waffe mit dem hoechsten Skill. Wer keine davon im Profil hat, kommt fuer
+ * den Platz nicht in Frage.
+ *
+ * @returns {{weaponId: number, rating: number} | null}
+ */
+export function besteWaffe(ratings, slot) {
+  let beste = null;
+  for (const weaponId of erlaubteWaffen(slot)) {
+    const rating = ratings.get(weaponId);
+    if (rating == null) continue;
+    if (!beste || rating > beste.rating) beste = { weaponId, rating };
+  }
+  return beste;
+}
+
+/**
+ * Traegt die tatsaechlich gespielte Waffe in den Platz ein - samt Name und
+ * Bild. Ohne das zeigte die Aufstellung weiter die erste Wahl an, obwohl
+ * die Person mit der Alternative antritt.
+ */
+function uebernehmeWaffe(slot, weaponId) {
+  slot.weaponId = weaponId;
+  const option = slot.optionen?.find((o) => o.id === weaponId);
+  if (option) {
+    slot.weaponName = option.name;
+    slot.icon = option.icon ?? slot.icon;
+  }
+}
+
+/** Alle zugelassenen Waffen eines Platzes, erste Wahl zuerst. */
+export function erlaubteWaffen(slot) {
+  return slot.weaponIds?.length ? slot.weaponIds : [slot.weaponId];
+}
+
 export function buildComposition(slots, players, directory = new Map()) {
   const byId = new Map(players.map((p) => [p.discordId, p]));
   const result = slots.map((s) => ({ ...s, discordId: null, rating: null, locked: false }));
@@ -109,7 +148,11 @@ export function buildComposition(slots, players, directory = new Map()) {
     if (lockedId && !takenPlayers.has(lockedId)) {
       const player = byId.get(lockedId) ?? directory.get(lockedId);
       slot.discordId = lockedId;
-      slot.rating = player ? player.ratings.get(slot.weaponId) ?? null : null;
+      // Auch hier die beste zugelassene Waffe - ein festgenagelter Spieler
+      // soll auf der Alternative stehen, wenn er die besser kann.
+      const beste = player ? besteWaffe(player.ratings, slot) : null;
+      slot.rating = beste?.rating ?? null;
+      if (beste) uebernehmeWaffe(slot, beste.weaponId);
       slot.displayName = player ? player.displayName : `Unbekannt (${lockedId})`;
       slot.locked = true;
       takenPlayers.add(lockedId);
@@ -143,14 +186,14 @@ export function buildComposition(slots, players, directory = new Map()) {
         continue;
       }
 
-      const rating = player.ratings.get(slot.weaponId);
-      if (rating == null) {
-        row[j] = IMPOSSIBLE; // Waffe nicht im Profil -> niemals zuordnen
+      const beste = besteWaffe(player.ratings, slot);
+      if (!beste) {
+        row[j] = IMPOSSIBLE; // keine zugelassene Waffe im Profil
         continue;
       }
 
       const weight = PRIORITY_WEIGHT[slot.priority] ?? 1.0;
-      row[j] = MAX_PROFIT - rating * weight * 100;
+      row[j] = MAX_PROFIT - beste.rating * weight * 100;
       feasRow[j] = true;
     }
     cost.push(row);
@@ -167,9 +210,13 @@ export function buildComposition(slots, players, directory = new Map()) {
 
     const slot = result[openSlotIdx[j]];
     const player = pool[i];
+    const beste = besteWaffe(player.ratings, slot);
     slot.discordId = player.discordId;
     slot.displayName = player.displayName;
-    slot.rating = player.ratings.get(slot.weaponId);
+    slot.rating = beste?.rating ?? null;
+    // Festhalten, auf welcher der zugelassenen Waffen er antritt - genau
+    // das steht spaeter im Ping.
+    if (beste) uebernehmeWaffe(slot, beste.weaponId);
     takenPlayers.add(player.discordId);
   }
 
@@ -179,7 +226,7 @@ export function buildComposition(slots, players, directory = new Map()) {
 function finish(result, bench, slots) {
   // Bank nach bestem Skill auf einer der gesuchten Waffen sortieren -
   // wer als Erster nachrueckt, steht oben.
-  const wantedWeapons = [...new Set(slots.map((s) => s.weaponId))];
+  const wantedWeapons = [...new Set(slots.flatMap(erlaubteWaffen))];
   const sortedBench = bench
     .map((p) => {
       let best = 0;

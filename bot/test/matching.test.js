@@ -120,3 +120,79 @@ test('20er-Comp mit 30 Anmeldungen laeuft durch', () => {
   const assigned = result.slots.map((s) => s.discordId);
   assert.equal(new Set(assigned).size, 20, 'niemand steht auf zwei Slots');
 });
+
+// ---------------------------------------------------------------------
+//  Ein Platz, mehrere zugelassene Waffen
+// ---------------------------------------------------------------------
+
+/** Axt (1) oder Realmbreaker (2) - derselbe Platz. */
+function austauschbarerSlot(index, extra = {}) {
+  return {
+    slotIndex: index,
+    weaponId: 1,
+    weaponIds: [1, 2],
+    weaponName: 'Axt',
+    priority: 1,
+    label: null,
+    ...extra,
+  };
+}
+
+function spieler(id, name, ratings) {
+  return { discordId: id, displayName: name, ratings: new Map(ratings) };
+}
+
+test('wer nur die Alternative kann, passt trotzdem auf den Platz', () => {
+  const ergebnis = buildComposition(
+    [austauschbarerSlot(0)],
+    [spieler('1', 'Nurrealm', [[2, 8]])],
+  );
+  assert.equal(ergebnis.slots[0].discordId, '1');
+  assert.equal(ergebnis.slots[0].weaponId, 2, 'tritt auf dem Realmbreaker an');
+  assert.equal(ergebnis.slots[0].rating, 8);
+  assert.equal(ergebnis.bench.length, 0);
+});
+
+test('kann jemand beide, zaehlt die bessere', () => {
+  const ergebnis = buildComposition(
+    [austauschbarerSlot(0)],
+    [spieler('1', 'Beides', [[1, 4], [2, 9]])],
+  );
+  assert.equal(ergebnis.slots[0].weaponId, 2);
+  assert.equal(ergebnis.slots[0].rating, 9);
+});
+
+test('ein Platz mit Alternativen wird trotzdem nur einmal besetzt', () => {
+  const ergebnis = buildComposition(
+    [austauschbarerSlot(0)],
+    [spieler('1', 'Axt', [[1, 7]]), spieler('2', 'Realm', [[2, 7]])],
+  );
+  assert.equal(ergebnis.filled, 1);
+  assert.equal(ergebnis.total, 1);
+  assert.equal(ergebnis.bench.length, 1, 'der zweite sitzt auf der Bank');
+});
+
+test('wer keine der zugelassenen Waffen kann, bleibt draussen', () => {
+  const ergebnis = buildComposition(
+    [austauschbarerSlot(0)],
+    [spieler('1', 'Fremd', [[99, 10]])],
+  );
+  assert.equal(ergebnis.slots[0].discordId, null);
+  assert.equal(ergebnis.bench[0].bestRating, 0);
+});
+
+test('die Bank kennt auch die Alternativen', () => {
+  // Zwei Plaetze, drei Leute: der Uebrige muss als Nachruecker erkannt
+  // werden, obwohl er nur die zweite Waffe spielt.
+  const ergebnis = buildComposition(
+    [austauschbarerSlot(0), austauschbarerSlot(1)],
+    [
+      spieler('1', 'A', [[1, 9]]),
+      spieler('2', 'B', [[1, 8]]),
+      spieler('3', 'C', [[2, 6]]),
+    ],
+  );
+  assert.equal(ergebnis.bench.length, 1);
+  assert.equal(ergebnis.bench[0].displayName, 'C');
+  assert.equal(ergebnis.bench[0].bestRating, 6, 'zaehlt als Nachruecker, nicht als waffenlos');
+});

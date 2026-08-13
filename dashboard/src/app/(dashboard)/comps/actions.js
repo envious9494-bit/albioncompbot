@@ -74,9 +74,17 @@ export async function saveCompSlots(compId, slots, notes) {
       throw new Error(`Zeile ${zeile}: die Priorität muss zwischen 1 und 5 liegen.`);
     }
 
+    // Alternativen: gleichwertige Waffen fuer denselben Platz. Doppelte
+    // und die erste Wahl selbst fliegen raus - sonst stuende dieselbe
+    // Waffe zweimal im Rennen und die Anzeige schriebe "Axt / Axt".
+    const alternativen = [...new Set((slot.altWeaponIds ?? []).map(Number))].filter(
+      (id) => Number.isInteger(id) && id > 0 && id !== weaponId,
+    );
+
     clean.push({
       comp_id: compId,
       weapon_id: weaponId,
+      alt_weapon_ids: alternativen,
       count,
       priority,
       label: (slot.label || '').trim() || null,
@@ -89,7 +97,7 @@ export async function saveCompSlots(compId, slots, notes) {
     await tx`delete from comp_slot where comp_id = ${compId}`;
     if (clean.length) {
       await tx`
-        insert into comp_slot ${tx(clean, 'comp_id', 'weapon_id', 'count', 'priority', 'label', 'sort_order')}
+        insert into comp_slot ${tx(clean, 'comp_id', 'weapon_id', 'alt_weapon_ids', 'count', 'priority', 'label', 'sort_order')}
       `;
     }
   });

@@ -45,7 +45,7 @@ export default function SlotEditor({ compId, weapons, initialSlots, initialNotes
   function addSlot() {
     setSlots((prev) => [
       ...prev,
-      { key: nextKey++, weaponId: weapons[0]?.id ?? 0, count: 1, priority: 3, label: '' },
+      { key: nextKey++, weaponId: weapons[0]?.id ?? 0, altWeaponIds: [], count: 1, priority: 3, label: '' },
     ]);
   }
 
@@ -93,7 +93,11 @@ export default function SlotEditor({ compId, weapons, initialSlots, initialNotes
         )}
 
         {slots.map((slot) => {
-          const players = coverage[slot.weaponId] ?? 0;
+          // Wer eine der zugelassenen Waffen kann, kommt fuer den Platz in
+          // Frage - die Abdeckung muss sie alle zaehlen, sonst warnt sie
+          // vor einer Luecke, die es dank der Alternative nicht gibt.
+          const erlaubt = [slot.weaponId, ...(slot.altWeaponIds ?? [])];
+          const players = erlaubt.reduce((summe, id) => summe + (coverage[id] ?? 0), 0);
           const tight = players < Number(slot.count);
 
           return (
@@ -150,6 +154,57 @@ export default function SlotEditor({ compId, weapons, initialSlots, initialNotes
                   ×
                 </button>
               </div>
+              <div className="row" style={{ margin: '2px 0 0 2px', flexWrap: 'wrap', gap: 6 }}>
+                <span className="small muted">oder</span>
+
+                {(slot.altWeaponIds ?? []).map((id) => (
+                  <span key={id} className="badge" style={{ display: 'inline-flex', gap: 6 }}>
+                    {weaponById.get(id)?.name ?? id}
+                    <button
+                      type="button"
+                      className="btn-ghost small"
+                      style={{ padding: '0 4px', lineHeight: 1 }}
+                      aria-label={`${weaponById.get(id)?.name ?? id} als Alternative entfernen`}
+                      onClick={() =>
+                        update(slot.key, {
+                          altWeaponIds: (slot.altWeaponIds ?? []).filter((x) => x !== id),
+                        })
+                      }
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+
+                <select
+                  value=""
+                  style={{ maxWidth: 220 }}
+                  onChange={(event) => {
+                    const id = Number(event.target.value);
+                    if (!id) return;
+                    const schon = slot.altWeaponIds ?? [];
+                    if (id === slot.weaponId || schon.includes(id)) return;
+                    update(slot.key, { altWeaponIds: [...schon, id] });
+                  }}
+                >
+                  <option value="">+ Alternative…</option>
+                  {byFamily.map(([family, list]) => (
+                    <optgroup key={family} label={family}>
+                      {list
+                        .filter(
+                          (weapon) =>
+                            weapon.id !== slot.weaponId && !(slot.altWeaponIds ?? []).includes(weapon.id),
+                        )
+                        .map((weapon) => (
+                          <option key={weapon.id} value={weapon.id}>
+                            {weapon.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
               <div className="prio" style={{ margin: '-4px 0 8px 2px' }}>
                 {players === 0
                   ? '⚠️ niemand hat diese Waffe im Profil'

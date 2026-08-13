@@ -74,7 +74,15 @@ function kompaktesEmoji(icon) {
 
 /** Ein Platz, eine Zeile - in der Reihenfolge der Comp. */
 function slotZeile(slot) {
-  const name = slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName;
+  // Ist der Platz frei und laesst mehrere Waffen zu, gehoeren alle dran -
+  // sonst weiss niemand, dass er sich auch mit der Alternative meldet.
+  // Sobald jemand drauf steht, zeigt der Platz nur noch dessen Waffe.
+  const waffe =
+    !slot.discordId && slot.optionen?.length > 1
+      ? slot.optionen.map((o) => o.name).join(' / ')
+      : slot.weaponName;
+
+  const name = slot.label ? `${slot.label} · ${waffe}` : waffe;
   const kopf = `${kompaktesEmoji(slot.icon)} **${name}**`;
 
   if (!slot.discordId) return `${kopf} — *frei*`;

@@ -271,6 +271,10 @@ async function refreshEvent(eventId, { force = false } = {}) {
     weaponName: s.weapon_name,
     category: s.category,
     icon: s.emoji || s.icon,
+    // Alle zugelassenen Waffen dieses Platzes, erste Wahl zuerst. Der
+    // Zuordner sucht sich daraus die aus, die die Person am besten kann.
+    weaponIds: (s.optionen ?? []).map((o) => o.id),
+    optionen: s.optionen ?? [],
     priority: s.priority,
     label: s.label,
     lockedDiscordId: s.locked_discord_id,
@@ -608,6 +612,10 @@ async function handleCommand(interaction) {
     weaponName: s.weapon_name,
     category: s.category,
     icon: s.emoji || s.icon,
+    // Alle zugelassenen Waffen dieses Platzes, erste Wahl zuerst. Der
+    // Zuordner sucht sich daraus die aus, die die Person am besten kann.
+    weaponIds: (s.optionen ?? []).map((o) => o.id),
+    optionen: s.optionen ?? [],
     priority: s.priority,
     label: s.label,
     discordId: null,
