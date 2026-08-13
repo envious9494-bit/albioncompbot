@@ -121,7 +121,9 @@ let letzte = '';
 while (Date.now() < frist) {
   await new Promise((fertig) => setTimeout(fertig, 5000));
 
-  const { lines = [] } = await api(`/deployments/${DEPLOYMENT}/logs?size=65536`);
+  // size sind ZEILEN und hoechstens 500 - auch wenn das Beispiel in der Doku
+  // "size=1048576" zeigt, als waeren es Bytes. Darueber antwortet sie mit 400.
+  const { lines = [] } = await api(`/deployments/${DEPLOYMENT}/logs?size=200`);
   letzte = lines.slice(-25).join('\n');
 
   if (lines.some((zeile) => zeile.includes(BEREIT))) {
