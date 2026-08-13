@@ -108,9 +108,9 @@ Entwicklermodus an sein.
 - Keine Privileged Intents nötig — der Bot kommt mit `Guilds` aus und liest
   keine Nachrichteninhalte.
 
-**Bot einladen:** am einfachsten über das Dashboard unter **Einrichtung** — dort
-stehen der Einladungsknopf, die Server-IDs und der Live-Status. Der Link
-dahinter lautet:
+**Bot einladen:** am einfachsten über das Dashboard. Nach dem Login kommt die
+Serverauswahl; dort steht neben jedem Server ohne Bot ein Einladen-Knopf. Der
+Link dahinter lautet:
 
 ```
 https://discord.com/oauth2/authorize?client_id=1537191851545858088&permissions=216064&integration_type=0&scope=bot+applications.commands
@@ -183,8 +183,8 @@ mit dem Recht *Server verwalten*.
 | Comps     | Vorlagen bauen: Waffe, Anzahl, Priorität                             |
 | Spieler   | wer welche Waffen eingetragen hat, und wer noch gar keine            |
 | Waffen    | die Waffenliste pflegen                                              |
+| Balance   | Gold-Konten: Schalter, Berechtigte, Kontostände, Buchungen           |
 | Zugang    | wer für diesen Server ins Dashboard darf                            |
-| Einrichtung | Bot einladen, Status prüfen, Kennungen abgreifen                   |
 
 Die Seite **Einrichtung** ist der Startpunkt: sie zeigt, ob der Bot läuft und
 auf welchen Servern er sitzt, ob `DISCORD_GUILD_ID` und `OFFICER_IDS` gesetzt

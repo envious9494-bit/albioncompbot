@@ -199,7 +199,7 @@ async function registerCommands() {
 
   if (targets.length === 0) {
     console.log(
-      'Der Bot ist auf keinem Server. Lade ihn ein (Dashboard -> Einrichtung), ' +
+      'Der Bot ist auf keinem Server. Lade ihn im Dashboard unter "Server waehlen" ein, ' +
         'die Befehle kommen dann von selbst.',
     );
     return;
@@ -517,6 +517,7 @@ async function handleCommand(interaction) {
       delta: abziehen ? -menge : menge,
       reason: grund,
       byId: interaction.user.id,
+      byName: displayNameOf(interaction),
     });
 
     await interaction.reply({
@@ -798,6 +799,7 @@ async function handlePrefixCommand(message) {
     delta: abziehen ? -menge : menge,
     reason: grund,
     byId: message.author.id,
+    byName: message.member?.nickname || message.author.globalName || message.author.username,
   });
 
   await message.reply({

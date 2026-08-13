@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import BotStatus from '@/components/BotStatus';
 import GuildSwitcher from '@/components/GuildSwitcher';
 import NavLink from '@/components/NavLink';
 import { requireGuild } from '@/lib/guilds';
@@ -21,7 +22,6 @@ export default async function DashboardLayout({ children }) {
         <NavLink href="/balance">Balance</NavLink>
         <NavLink href="/zugang">Zugang</NavLink>
         <NavLink href="/waffen">Waffen</NavLink>
-        <NavLink href="/einrichtung">Einrichtung</NavLink>
         <div className="sidebar-footer">
           <Link href="/server" className="small" style={{ display: 'block', marginBottom: 8 }}>
             Server wechseln
@@ -34,7 +34,11 @@ export default async function DashboardLayout({ children }) {
           </form>
         </div>
       </nav>
-      <main className="content">{children}</main>
+      <main className="content">
+        {/* Steht nur da, wenn etwas nicht stimmt - siehe BotStatus. */}
+        <BotStatus guild={guild} />
+        {children}
+      </main>
     </div>
   );
 }

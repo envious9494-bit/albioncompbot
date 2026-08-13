@@ -15,9 +15,9 @@ export const DEV_LOGIN = process.env.DEV_LOGIN === '1' && process.env.NODE_ENV !
 const MANAGE_GUILD = 1n << 5n;
 
 /**
- * Holt die Server, auf denen der Angemeldete Adminrechte hat - daraus kann er
- * unter /einrichtung die Server-ID abgreifen, ohne in Discord den
- * Entwicklermodus einschalten zu muessen.
+ * Holt die Server, auf denen der Angemeldete Adminrechte hat. Daraus baut die
+ * Serverauswahl ihre Liste - auch die Server, auf denen der Bot noch fehlt und
+ * die man deshalb einladen koennen muss.
  *
  * Gespeichert wird nur {id, name}, nicht das Zugriffstoken.
  */

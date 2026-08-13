@@ -49,7 +49,7 @@ export async function getBalance(guildId, discordId) {
  * Beides in einer Transaktion - ein Kontostand ohne passende Buchung
  * waere schlimmer als gar keine Aenderung.
  */
-export async function adjustBalance({ guildId, discordId, displayName, delta, reason, byId }) {
+export async function adjustBalance({ guildId, discordId, displayName, delta, reason, byId, byName }) {
   return sql.begin(async (tx) => {
     const [row] = await tx`
       insert into balance (guild_id, discord_id, display_name, amount)
@@ -64,8 +64,9 @@ export async function adjustBalance({ guildId, discordId, displayName, delta, re
     const saldo = BigInt(row.amount);
 
     await tx`
-      insert into balance_log (guild_id, discord_id, delta, saldo_danach, reason, created_by)
-      values (${guildId}, ${discordId}, ${String(delta)}, ${String(saldo)}, ${reason || null}, ${byId})
+      insert into balance_log (guild_id, discord_id, delta, saldo_danach, reason, created_by, created_by_name)
+      values (${guildId}, ${discordId}, ${String(delta)}, ${String(saldo)}, ${reason || null},
+              ${byId}, ${byName || null})
     `;
 
     return saldo;
@@ -134,7 +135,7 @@ const FARBE_MINUS = 0xed4245;
 /**
  * Rangliste als Codeblock. Anders als in Fliesstext stehen die Betraege
  * dadurch wirklich untereinander - bei einer Tabelle aus Zahlen ist genau
- * das der Punkt. Die ersten drei bekommen ihre Medaille davor.
+ * das der Punkt.
  */
 export function renderLeaderboard({ rows, seite, seiten, gesamt }, guildName) {
   const embed = new EmbedBuilder()

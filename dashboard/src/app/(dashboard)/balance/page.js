@@ -25,11 +25,17 @@ export default async function BalancePage() {
       order by amount desc
       limit 25
     `,
+    // Namen fuer Empfaenger und Geber: erst aus dem Konto, sonst aus der
+    // Spielerliste. Wer noch nie etwas bekommen hat, taucht nur dort auf.
     sql`
-      select l.discord_id, l.delta, l.saldo_danach, l.reason, l.created_by, l.created_at,
-             b.display_name
+      select l.discord_id, l.delta, l.saldo_danach, l.created_by, l.created_at,
+             coalesce(be.display_name, pe.display_name) as empfaenger,
+             coalesce(l.created_by_name, bg.display_name, pg.display_name) as geber
       from balance_log l
-      left join balance b on b.guild_id = l.guild_id and b.discord_id = l.discord_id
+      left join balance be on be.guild_id = l.guild_id and be.discord_id = l.discord_id
+      left join player  pe on pe.guild_id = l.guild_id and pe.discord_id = l.discord_id
+      left join balance bg on bg.guild_id = l.guild_id and bg.discord_id = l.created_by
+      left join player  pg on pg.guild_id = l.guild_id and pg.discord_id = l.created_by
       where l.guild_id = ${guild.id}
       order by l.id desc
       limit 20
@@ -160,10 +166,10 @@ export default async function BalancePage() {
             <thead>
               <tr>
                 <th style={{ width: 130 }}>Wann</th>
-                <th>Wer</th>
+                <th>Empfänger</th>
+                <th>Von</th>
                 <th style={{ width: 120, textAlign: 'right' }}>Änderung</th>
                 <th style={{ width: 120, textAlign: 'right' }}>Danach</th>
-                <th>Grund</th>
               </tr>
             </thead>
             <tbody>
@@ -175,7 +181,12 @@ export default async function BalancePage() {
                       timeStyle: 'short',
                     })}
                   </td>
-                  <td>{eintrag.display_name ?? eintrag.discord_id}</td>
+                  <td>{eintrag.empfaenger ?? eintrag.discord_id}</td>
+                  <td className="muted">
+                    {eintrag.geber ?? (
+                      <span className="small ip-data">{eintrag.created_by}</span>
+                    )}
+                  </td>
                   <td
                     className="ip-data"
                     style={{
@@ -189,7 +200,6 @@ export default async function BalancePage() {
                   <td className="muted ip-data" style={{ textAlign: 'right' }}>
                     {gold.format(BigInt(eintrag.saldo_danach))}
                   </td>
-                  <td className="small muted">{eintrag.reason ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
