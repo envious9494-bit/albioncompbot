@@ -26,24 +26,52 @@ export async function upsertPlayer(discordId, displayName) {
   `;
 }
 
-// Die Waffenliste aendert sich selten, wird im Fragebogen aber bei jedem Klick
-// gebraucht - deshalb ein paar Sekunden Zwischenspeicher.
+// Die Waffenliste aendert sich selten, wird im Fragebogen und bei jeder
+// Autovervollstaendigung aber staendig gebraucht. Discord verwirft
+// Autovervollstaendigungen nach drei Sekunden, deshalb darf der Abruf nie
+// auf die Datenbank warten: ist der Zwischenspeicher abgelaufen, wird der
+// alte Stand sofort zurueckgegeben und im Hintergrund erneuert.
 let weaponCache = null;
 let weaponCacheUntil = 0;
-const WEAPON_CACHE_MS = 30_000;
+let weaponRefresh = null;
+const WEAPON_CACHE_MS = 60_000;
 
-/** Alle aktiven Waffen, fuer Autocomplete und Anzeige. */
-export async function getWeapons() {
-  if (weaponCache && Date.now() < weaponCacheUntil) return weaponCache;
-
-  weaponCache = await sql`
+function ladeWaffen() {
+  return sql`
     select id, name, category, icon, item_id, aliases, sort_order
     from weapon
     where active
     order by sort_order, name
   `;
-  weaponCacheUntil = Date.now() + WEAPON_CACHE_MS;
-  return weaponCache;
+}
+
+/** Alle aktiven Waffen, fuer Autocomplete und Anzeige. */
+export async function getWeapons() {
+  if (weaponCache && Date.now() < weaponCacheUntil) return weaponCache;
+
+  if (!weaponRefresh) {
+    weaponRefresh = ladeWaffen()
+      .then((rows) => {
+        weaponCache = rows;
+        weaponCacheUntil = Date.now() + WEAPON_CACHE_MS;
+        return rows;
+      })
+      .catch((error) => {
+        // Nicht weiterwerfen, solange ein alter Stand da ist - lieber leicht
+        // veraltete Waffen anzeigen als eine kaputte Autovervollstaendigung.
+        if (weaponCache) {
+          console.error('Waffenliste konnte nicht erneuert werden:', error.message);
+          return weaponCache;
+        }
+        throw error;
+      })
+      .finally(() => {
+        weaponRefresh = null;
+      });
+  }
+
+  // Alter Stand vorhanden? Sofort ausliefern, Erneuerung laeuft nebenher.
+  return weaponCache ?? weaponRefresh;
 }
 
 /** Waffenprofil eines Spielers als Map weaponId -> Skill. */

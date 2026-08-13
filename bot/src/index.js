@@ -298,17 +298,36 @@ function displayNameOf(interaction) {
   );
 }
 
+/**
+ * Fehler, bei denen Discord die Interaktion schon verworfen hat. Passiert,
+ * wenn eine Antwort laenger als drei Sekunden braucht - etwa weil die
+ * Datenbank gerade traege ist. Nichts, was man reparieren koennte, und
+ * erst recht kein Grund, den Bot zu beenden.
+ */
+const VERFALLEN = new Set([
+  10062, // Unknown interaction
+  10008, // Unknown message
+  40060, // Interaction has already been acknowledged
+]);
+
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
-    if (interaction.isAutocomplete()) return handleAutocomplete(interaction);
-    if (interaction.isChatInputCommand()) return handleCommand(interaction);
+    // Das "await" ist wichtig: ohne es liefe ein Fehler aus diesen Funktionen
+    // am catch vorbei und wuerde den Prozess beenden.
+    if (interaction.isAutocomplete()) return await handleAutocomplete(interaction);
+    if (interaction.isChatInputCommand()) return await handleCommand(interaction);
 
     // Fragebogen zuerst - der bringt eigene Knoepfe und Auswahlmenues mit
     if (interaction.isStringSelectMenu() || interaction.isButton()) {
       if (await handleQuestionnaire(interaction)) return undefined;
     }
-    if (interaction.isButton()) return handleButton(interaction);
+    if (interaction.isButton()) return await handleButton(interaction);
   } catch (error) {
+    if (VERFALLEN.has(error?.code)) {
+      console.warn(`Interaktion war schon abgelaufen (${error.code}) - ignoriert.`);
+      return undefined;
+    }
+
     console.error('Interaktion fehlgeschlagen:', error);
     const payload = { content: `Fehler: ${error.message}`, flags: MessageFlags.Ephemeral };
     if (interaction.isRepliable()) {
@@ -319,6 +338,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
   }
+  return undefined;
+});
+
+// Letztes Netz: ein Fehler aus der Discord-Bibliothek darf den Bot nicht
+// beenden. Ohne diesen Zuhoerer wirft Node bei einem "error"-Ereignis.
+client.on(Events.Error, (error) => {
+  console.error('Discord-Client-Fehler:', error.message);
+});
+
+client.on(Events.ShardError, (error) => {
+  console.error('Verbindungsfehler zu Discord:', error.message);
 });
 
 async function handleAutocomplete(interaction) {
@@ -553,6 +583,17 @@ client.on(Events.GuildCreate, async (guild) => {
 client.once(Events.ClientReady, async () => {
   console.log(`Eingeloggt als ${client.user.tag} · Zeitzone ${TIMEZONE}`);
   await registerCommands();
+
+  // Waffenliste und Datenbankverbindung vorwaermen. Discord verwirft
+  // Autovervollstaendigungen nach drei Sekunden - die erste Anfrage darf
+  // also nicht auf einen kalten Verbindungsaufbau warten.
+  try {
+    const start = Date.now();
+    const weapons = await getWeapons();
+    console.log(`Waffenliste geladen: ${weapons.length} Stueck in ${Date.now() - start} ms`);
+  } catch (error) {
+    console.error('Waffenliste konnte nicht vorgeladen werden:', error.message);
+  }
 
   // Nach einem Neustart alle laufenden Events wieder aufnehmen
   await tick();
