@@ -2,22 +2,22 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { sql } from '@/lib/db';
-import { requireOfficerPage } from '@/lib/guards';
+import { requireGuild } from '@/lib/guilds';
 import SlotEditor from './SlotEditor';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CompEditorPage({ params }) {
-  await requireOfficerPage();
+  const { guild } = await requireGuild();
   const { id } = await params;
   const compId = Number(id);
   if (!Number.isInteger(compId)) notFound();
 
   const [comps, weapons, slots, coverageRows] = await Promise.all([
-    sql`select id, name, notes from comp where id = ${compId}`,
+    sql`select id, name, notes from comp where id = ${compId} and guild_id = ${guild.id}`,
     sql`select id, name, category, item_id, icon from weapon where active order by sort_order, name`,
     sql`select weapon_id, count, priority, label from comp_slot where comp_id = ${compId} order by sort_order, id`,
-    sql`select weapon_id, count(*)::int as players from player_weapon group by weapon_id`,
+    sql`select weapon_id, count(*)::int as players from player_weapon where guild_id = ${guild.id} group by weapon_id`,
   ]);
 
   const comp = comps[0];

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { sql } from '@/lib/db';
-import { requireOfficerPage } from '@/lib/guards';
+import { requireGuild } from '@/lib/guilds';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ const STATUS_LABEL = {
 };
 
 export default async function EventsPage() {
-  await requireOfficerPage();
+  const { guild } = await requireGuild();
 
   const events = await sql`
     select e.id, e.comp_name, e.title, e.starts_at, e.status,
@@ -21,6 +21,7 @@ export default async function EventsPage() {
            (select count(*) from signup where event_id = e.id and status = 'yes')::int as signups
     from event e
     left join event_slot s on s.event_id = e.id
+    where e.guild_id = ${guild.id}
     group by e.id
     order by e.starts_at desc
     limit 40

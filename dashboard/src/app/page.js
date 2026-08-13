@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation';
 
-import { auth, DEV_LOGIN } from '@/auth';
+import { DEV_LOGIN } from '@/auth';
+import { getAccessibleGuilds } from '@/lib/guilds';
 import { devLoginAction, loginAction } from './actions/auth';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
-  const session = await auth();
-  if (session?.user?.isOfficer) redirect('/events');
+  const { session, guilds } = await getAccessibleGuilds();
+  if (session && guilds.length > 0) redirect('/events');
   if (session) redirect('/kein-zutritt');
 
   return (
@@ -30,7 +33,7 @@ export default async function HomePage() {
             </div>
             <div className="row" style={{ justifyContent: 'center' }}>
               <input name="name" defaultValue="Testnutzer" style={{ width: 140 }} />
-              <input name="discordId" defaultValue="dev-1" style={{ width: 90 }} />
+              <input name="discordId" defaultValue="dev-1" style={{ width: 120 }} />
               <button type="submit" className="btn-ghost">
                 Rein
               </button>

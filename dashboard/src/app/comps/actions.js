@@ -4,18 +4,31 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { sql } from '@/lib/db';
-import { requireOfficerAction } from '@/lib/guards';
+import { requireGuildAction } from '@/lib/guilds';
+
+/** Stellt sicher, dass die Comp zu einem Server gehoert, den man sehen darf. */
+async function compDesServers(compId) {
+  const [comp] = await sql`select id, guild_id, name from comp where id = ${compId}`;
+  if (!comp) throw new Error('Diese Comp gibt es nicht mehr.');
+  await requireGuildAction(comp.guild_id);
+  return comp;
+}
 
 export async function createComp(formData) {
-  const session = await requireOfficerAction();
+  const guildId = String(formData.get('guild_id') || '');
+  const { session } = await requireGuildAction(guildId);
+
   const name = (formData.get('name') || '').toString().trim();
   if (!name) throw new Error('Die Comp braucht einen Namen.');
 
-  const existing = await sql`select id from comp where name = ${name}`;
-  if (existing.length) throw new Error(`Es gibt schon eine Comp namens "${name}".`);
+  const existing = await sql`
+    select id from comp where guild_id = ${guildId} and name = ${name}
+  `;
+  if (existing.length) throw new Error(`Auf diesem Server gibt es schon eine Comp namens "${name}".`);
 
   const [comp] = await sql`
-    insert into comp (name, created_by) values (${name}, ${session.user.discordId})
+    insert into comp (guild_id, name, created_by)
+    values (${guildId}, ${name}, ${session.user.discordId})
     returning id
   `;
 
@@ -24,10 +37,10 @@ export async function createComp(formData) {
 }
 
 export async function deleteComp(formData) {
-  await requireOfficerAction();
   const compId = Number(formData.get('comp_id'));
   if (!Number.isInteger(compId)) throw new Error('Unbekannte Comp.');
 
+  await compDesServers(compId);
   await sql`delete from comp where id = ${compId}`;
   revalidatePath('/comps');
 }
@@ -38,7 +51,7 @@ export async function deleteComp(formData) {
  * Erstellen des Events eingefroren.
  */
 export async function saveCompSlots(compId, slots, notes) {
-  await requireOfficerAction();
+  await compDesServers(compId);
 
   const clean = [];
   slots.forEach((slot, index) => {

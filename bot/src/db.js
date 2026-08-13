@@ -15,12 +15,43 @@ export const sql = postgres(process.env.DATABASE_URL, {
   connect_timeout: 15,
 });
 
-/** Legt den Spieler an oder aktualisiert seinen Anzeigenamen. */
-export async function upsertPlayer(discordId, displayName) {
+// =====================================================================
+//  Server (Gilden)
+//
+//  Fast alles haengt an einer Server-ID: Comps, Events, Spieler und deren
+//  Waffenprofile. Nur die Waffenliste selbst ist geteilt.
+// =====================================================================
+
+/** Traegt den Server ein oder frischt Name und Zeitstempel auf. */
+export async function upsertGuild(guildId, name, icon = null) {
   await sql`
-    insert into player (discord_id, display_name)
-    values (${discordId}, ${displayName})
-    on conflict (discord_id) do update
+    insert into guild (id, name, icon)
+    values (${guildId}, ${name}, ${icon})
+    on conflict (id) do update
+      set name = excluded.name,
+          icon = excluded.icon,
+          last_seen = now()
+  `;
+}
+
+/** Steht die Person auf der Zugangsliste dieses Servers? */
+export async function hasGuildAccess(guildId, discordId) {
+  const [row] = await sql`
+    select 1 from guild_access where guild_id = ${guildId} and discord_id = ${discordId}
+  `;
+  return Boolean(row);
+}
+
+// =====================================================================
+//  Spieler und Waffenprofile
+// =====================================================================
+
+/** Legt den Spieler auf diesem Server an oder aktualisiert seinen Namen. */
+export async function upsertPlayer(guildId, discordId, displayName) {
+  await sql`
+    insert into player (guild_id, discord_id, display_name)
+    values (${guildId}, ${discordId}, ${displayName})
+    on conflict (guild_id, discord_id) do update
       set display_name = excluded.display_name,
           updated_at = now()
   `;
@@ -45,7 +76,7 @@ function ladeWaffen() {
   `;
 }
 
-/** Alle aktiven Waffen, fuer Autocomplete und Anzeige. */
+/** Alle aktiven Waffen. Serveruebergreifend - Albion-Waffen sind ueberall gleich. */
 export async function getWeapons() {
   if (weaponCache && Date.now() < weaponCacheUntil) return weaponCache;
 
@@ -70,28 +101,32 @@ export async function getWeapons() {
       });
   }
 
-  // Alter Stand vorhanden? Sofort ausliefern, Erneuerung laeuft nebenher.
   return weaponCache ?? weaponRefresh;
 }
 
-/** Waffenprofil eines Spielers als Map weaponId -> Skill. */
-export async function getPlayerWeapons(discordId) {
+/** Waffenprofil eines Spielers auf diesem Server als Map weaponId -> Skill. */
+export async function getPlayerWeapons(guildId, discordId) {
   const rows = await sql`
-    select weapon_id, rating from player_weapon where discord_id = ${discordId}
+    select weapon_id, rating
+    from player_weapon
+    where guild_id = ${guildId} and discord_id = ${discordId}
   `;
   return new Map(rows.map((row) => [row.weapon_id, row.rating]));
 }
 
 /** Setzt einen einzelnen Skill. rating = null loescht die Waffe aus dem Profil. */
-export async function setRating(discordId, weaponId, rating) {
+export async function setRating(guildId, discordId, weaponId, rating) {
   if (rating == null) {
-    await sql`delete from player_weapon where discord_id = ${discordId} and weapon_id = ${weaponId}`;
+    await sql`
+      delete from player_weapon
+      where guild_id = ${guildId} and discord_id = ${discordId} and weapon_id = ${weaponId}
+    `;
     return;
   }
   await sql`
-    insert into player_weapon (discord_id, weapon_id, rating)
-    values (${discordId}, ${weaponId}, ${rating})
-    on conflict (discord_id, weapon_id) do update set rating = excluded.rating
+    insert into player_weapon (guild_id, discord_id, weapon_id, rating)
+    values (${guildId}, ${discordId}, ${weaponId}, ${rating})
+    on conflict (guild_id, discord_id, weapon_id) do update set rating = excluded.rating
   `;
 }
 
@@ -100,7 +135,7 @@ export async function setRating(discordId, weaponId, rating) {
  * Standardwert dazu, abgewaehlte fliegen raus. Waffen ausserhalb dieser Seite
  * bleiben unberuehrt.
  */
-export async function syncGroupSelection(discordId, groupWeaponIds, selectedIds, defaultRating) {
+export async function syncGroupSelection(guildId, discordId, groupWeaponIds, selectedIds, defaultRating) {
   if (groupWeaponIds.length === 0) return;
   const selected = new Set(selectedIds);
   const removed = groupWeaponIds.filter((id) => !selected.has(id));
@@ -109,32 +144,38 @@ export async function syncGroupSelection(discordId, groupWeaponIds, selectedIds,
     if (removed.length) {
       await tx`
         delete from player_weapon
-        where discord_id = ${discordId} and weapon_id in ${tx(removed)}
+        where guild_id = ${guildId} and discord_id = ${discordId} and weapon_id in ${tx(removed)}
       `;
     }
     if (selected.size) {
       const rows = [...selected].map((weaponId) => ({
+        guild_id: guildId,
         discord_id: discordId,
         weapon_id: weaponId,
         rating: defaultRating,
       }));
       // do nothing: ein schon vorhandener Skill soll nicht auf den Standard zurueckfallen
       await tx`
-        insert into player_weapon ${tx(rows, 'discord_id', 'weapon_id', 'rating')}
-        on conflict (discord_id, weapon_id) do nothing
+        insert into player_weapon ${tx(rows, 'guild_id', 'discord_id', 'weapon_id', 'rating')}
+        on conflict (guild_id, discord_id, weapon_id) do nothing
       `;
     }
   });
 }
 
-/** Comps mit Slotanzahl, fuer die Autocomplete-Liste bei /timer. */
-export async function getComps() {
+// =====================================================================
+//  Comps und Events
+// =====================================================================
+
+/** Comps dieses Servers mit Slotanzahl, fuer die Autocomplete-Liste bei /timer. */
+export async function getComps(guildId) {
   return sql`
     select c.id,
            c.name,
            coalesce(sum(s.count), 0)::int as size
     from comp c
     left join comp_slot s on s.comp_id = c.id
+    where c.guild_id = ${guildId}
     group by c.id, c.name
     order by c.name
   `;
@@ -146,6 +187,10 @@ export async function getComps() {
  */
 export async function createEvent({ compId, compName, title, guildId, channelId, startsAt, lockMinutes, createdBy }) {
   return sql.begin(async (tx) => {
+    // Sicherstellen, dass die Comp wirklich zu diesem Server gehoert
+    const [comp] = await tx`select id from comp where id = ${compId} and guild_id = ${guildId}`;
+    if (!comp) throw new Error('Diese Comp gehoert nicht zu diesem Server.');
+
     const [event] = await tx`
       insert into event (comp_id, comp_name, title, guild_id, channel_id, starts_at, lock_minutes, created_by)
       values (${compId}, ${compName}, ${title}, ${guildId}, ${channelId}, ${startsAt}, ${lockMinutes}, ${createdBy})
@@ -203,7 +248,8 @@ export async function loadEventState(eventId) {
     order by created_at
   `;
 
-  // Ratings fuer alle Angemeldeten und alle festgenagelten Spieler
+  // Ratings fuer alle Angemeldeten und alle festgenagelten Spieler -
+  // ausschliesslich aus der Gilde dieses Events
   const relevantIds = [
     ...new Set([
       ...signups.map((s) => s.discord_id),
@@ -215,13 +261,16 @@ export async function loadEventState(eventId) {
     ? await sql`
         select pw.discord_id, pw.weapon_id, pw.rating
         from player_weapon pw
-        where pw.discord_id in ${sql(relevantIds)}
+        where pw.guild_id = ${event.guild_id} and pw.discord_id in ${sql(relevantIds)}
       `
     : [];
 
-  // Namen auch fuer Spieler, die vom Leader festgenagelt, aber nicht angemeldet sind
   const people = relevantIds.length
-    ? await sql`select discord_id, display_name from player where discord_id in ${sql(relevantIds)}`
+    ? await sql`
+        select discord_id, display_name
+        from player
+        where guild_id = ${event.guild_id} and discord_id in ${sql(relevantIds)}
+      `
     : [];
 
   return { event, slots, signups, ratings, people };
@@ -256,28 +305,13 @@ export async function removeSignup(eventId, discordId) {
   await sql`delete from signup where event_id = ${eventId} and discord_id = ${discordId}`;
 }
 
-/**
- * Lebenszeichen fuer das Dashboard. Faellt still aus, wenn die Tabelle noch
- * fehlt (db/002_bot_status.sql nicht eingespielt) - der Bot soll deswegen
- * nicht stehenbleiben.
- */
-export async function touchBotStatus(botTag, guildIds) {
-  try {
-    await sql`
-      insert into bot_status (id, last_seen, bot_tag, guild_ids)
-      values (1, now(), ${botTag}, ${guildIds})
-      on conflict (id) do update
-        set last_seen = now(),
-            bot_tag = excluded.bot_tag,
-            guild_ids = excluded.guild_ids
-    `;
-  } catch (error) {
-    if (error.code !== '42P01') throw error; // 42P01 = Tabelle existiert nicht
-  }
-}
-
 export async function getOpenEvents() {
-  return sql`select id, starts_at, lock_minutes, status, render_hash from event where status = 'open' order by starts_at`;
+  return sql`
+    select id, starts_at, lock_minutes, status, render_hash
+    from event
+    where status = 'open'
+    order by starts_at
+  `;
 }
 
 export async function setRenderHash(eventId, hash) {
@@ -296,7 +330,22 @@ export async function setMessageId(eventId, messageId) {
   await sql`update event set message_id = ${messageId} where id = ${eventId}`;
 }
 
-export async function getEventByMessage(messageId) {
-  const [event] = await sql`select * from event where message_id = ${messageId}`;
-  return event ?? null;
+/**
+ * Lebenszeichen fuer das Dashboard. Faellt still aus, wenn die Tabelle noch
+ * fehlt (db/002_bot_status.sql nicht eingespielt) - der Bot soll deswegen
+ * nicht stehenbleiben.
+ */
+export async function touchBotStatus(botTag, guildIds) {
+  try {
+    await sql`
+      insert into bot_status (id, last_seen, bot_tag, guild_ids)
+      values (1, now(), ${botTag}, ${guildIds})
+      on conflict (id) do update
+        set last_seen = now(),
+            bot_tag = excluded.bot_tag,
+            guild_ids = excluded.guild_ids
+    `;
+  } catch (error) {
+    if (error.code !== '42P01') throw error; // 42P01 = Tabelle existiert nicht
+  }
 }

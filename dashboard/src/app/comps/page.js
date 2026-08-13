@@ -1,13 +1,13 @@
 import Link from 'next/link';
 
 import { sql } from '@/lib/db';
-import { requireOfficerPage } from '@/lib/guards';
+import { requireGuild } from '@/lib/guilds';
 import { createComp, deleteComp } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CompsPage() {
-  await requireOfficerPage();
+  const { guild } = await requireGuild();
 
   const comps = await sql`
     select c.id,
@@ -17,6 +17,7 @@ export default async function CompsPage() {
            count(s.id)::int as lines
     from comp c
     left join comp_slot s on s.comp_id = c.id
+    where c.guild_id = ${guild.id}
     group by c.id, c.name, c.notes
     order by c.name
   `;
@@ -31,6 +32,7 @@ export default async function CompsPage() {
 
       <div className="card">
         <form action={createComp} className="row">
+          <input type="hidden" name="guild_id" value={guild.id} />
           <input name="name" placeholder="Name, z.B. ZvZ 20er" required style={{ flex: 1 }} />
           <button type="submit">Neue Comp</button>
         </form>

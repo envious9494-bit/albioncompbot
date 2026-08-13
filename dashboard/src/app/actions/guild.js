@@ -1,0 +1,26 @@
+'use server';
+
+import { cookies } from 'next/headers';
+import { revalidatePath } from 'next/cache';
+
+import { getAccessibleGuilds, GUILD_COOKIE } from '@/lib/guilds';
+
+/** Wechselt den aktiven Server. Nur auf welche, die man auch sehen darf. */
+export async function selectGuild(formData) {
+  const guildId = String(formData.get('guild_id') || '');
+  const { guilds } = await getAccessibleGuilds();
+  if (!guilds.some((guild) => guild.id === guildId)) {
+    throw new Error('Für diesen Server fehlen dir die Rechte.');
+  }
+
+  const store = await cookies();
+  store.set(GUILD_COOKIE, guildId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 365,
+    path: '/',
+  });
+
+  revalidatePath('/', 'layout');
+}

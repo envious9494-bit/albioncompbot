@@ -4,20 +4,20 @@ import { notFound } from 'next/navigation';
 import AutoRefresh from '@/components/AutoRefresh';
 import WeaponIcon from '@/components/WeaponIcon';
 import { sql } from '@/lib/db';
-import { requireOfficerPage } from '@/lib/guards';
+import { requireGuild } from '@/lib/guilds';
 import { clearAllLocks } from '../actions';
 import SlotLockPicker from './SlotLockPicker';
 
 export const dynamic = 'force-dynamic';
 
 export default async function EventPage({ params }) {
-  const session = await requireOfficerPage();
+  const { session, guild } = await requireGuild();
   const { id } = await params;
   const eventId = Number(id);
   if (!Number.isInteger(eventId)) notFound();
 
   const [events, slots, signups, ratingRows] = await Promise.all([
-    sql`select * from event where id = ${eventId}`,
+    sql`select * from event where id = ${eventId} and guild_id = ${guild.id}`,
     sql`
       select s.slot_index, s.weapon_id, s.priority, s.label,
              s.locked_discord_id, s.assigned_discord_id, s.assigned_rating,
@@ -36,7 +36,8 @@ export default async function EventPage({ params }) {
     sql`
       select pw.discord_id, pw.weapon_id, pw.rating
       from player_weapon pw
-      where pw.discord_id in (select discord_id from signup where event_id = ${eventId})
+      where pw.guild_id = ${guild.id}
+        and pw.discord_id in (select discord_id from signup where event_id = ${eventId})
     `,
   ]);
 

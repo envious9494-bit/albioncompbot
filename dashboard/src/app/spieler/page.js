@@ -1,17 +1,18 @@
 import { sql } from '@/lib/db';
-import { requireOfficerPage } from '@/lib/guards';
+import { requireGuild } from '@/lib/guilds';
 
 export const dynamic = 'force-dynamic';
 
 export default async function PlayersPage() {
-  await requireOfficerPage();
+  const { guild } = await requireGuild();
 
   const [players, entries] = await Promise.all([
     sql`
       select p.discord_id, p.display_name, p.ingame_name,
              count(pw.weapon_id)::int as weapons
       from player p
-      left join player_weapon pw on pw.discord_id = p.discord_id
+      left join player_weapon pw on pw.guild_id = p.guild_id and pw.discord_id = p.discord_id
+      where p.guild_id = ${guild.id}
       group by p.discord_id
       order by lower(p.display_name)
     `,
@@ -19,6 +20,7 @@ export default async function PlayersPage() {
       select pw.discord_id, pw.rating, w.name, w.category, w.icon
       from player_weapon pw
       join weapon w on w.id = pw.weapon_id
+      where pw.guild_id = ${guild.id}
       order by pw.rating desc, w.sort_order
     `,
   ]);

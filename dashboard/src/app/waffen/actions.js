@@ -4,7 +4,15 @@ import { revalidatePath } from 'next/cache';
 
 import weaponData from '@/data/weapons.json';
 import { sql } from '@/lib/db';
-import { requireOfficerAction } from '@/lib/guards';
+import { getAccessibleGuilds } from '@/lib/guilds';
+
+/** Die Waffenliste gilt fuer alle Server - es reicht, irgendwo Zugang zu haben. */
+async function requireAnyGuild() {
+  const { session, guilds } = await getAccessibleGuilds();
+  if (!session) throw new Error('Nicht angemeldet.');
+  if (guilds.length === 0) throw new Error('Dafuer fehlen dir die Rechte.');
+  return session;
+}
 
 /**
  * Traegt die Waffenliste aus den Albion-Daten ein.
@@ -19,7 +27,7 @@ import { requireOfficerAction } from '@/lib/guards';
  * gemeldet.
  */
 export async function importWeapons() {
-  await requireOfficerAction();
+  await requireAnyGuild();
 
   const rows = weaponData.map((weapon) => ({
     name: weapon.name,
@@ -79,7 +87,7 @@ async function ladeWaffen() {
  * gesetzt - sonst zerreisst es bestehende Aufstellungen.
  */
 export async function saveWeapons(rows, removedIds) {
-  await requireOfficerAction();
+  await requireAnyGuild();
 
   const deactivated = [];
 

@@ -126,8 +126,8 @@ function rateRow(group, groupIndex, ratings) {
 }
 
 /** Baut die Fragebogen-Nachricht komplett aus dem aktuellen Datenbankstand. */
-export async function renderQuestionnaire(discordId, groupIndex = null) {
-  const [weapons, ratings] = await Promise.all([getWeapons(), getPlayerWeapons(discordId)]);
+export async function renderQuestionnaire(guildId, discordId, groupIndex = null) {
+  const [weapons, ratings] = await Promise.all([getWeapons(), getPlayerWeapons(guildId, discordId)]);
   const groups = buildGroups(weapons);
 
   const components = [categoryRow(groups, groupIndex)];
@@ -153,10 +153,10 @@ export async function renderQuestionnaire(discordId, groupIndex = null) {
 }
 
 /** Die Knopfreihen 1-10 fuer eine einzelne Waffe. */
-export async function renderRatePrompt(discordId, weaponId, groupIndex) {
-  const [weapons, ratings] = await Promise.all([getWeapons(), getPlayerWeapons(discordId)]);
+export async function renderRatePrompt(guildId, discordId, weaponId, groupIndex) {
+  const [weapons, ratings] = await Promise.all([getWeapons(), getPlayerWeapons(guildId, discordId)]);
   const weapon = weapons.find((entry) => entry.id === weaponId);
-  if (!weapon) return renderQuestionnaire(discordId, groupIndex);
+  if (!weapon) return renderQuestionnaire(guildId, discordId, groupIndex);
 
   const current = ratings.get(weaponId);
 
@@ -199,11 +199,12 @@ export async function handleQuestionnaire(interaction) {
   if (parts[0] !== 'wq') return false;
 
   const discordId = interaction.user.id;
+  const guildId = interaction.guildId;
   const action = parts[1];
 
   if (action === 'cat') {
     const groupIndex = Number(interaction.values[0]);
-    await interaction.update(await renderQuestionnaire(discordId, groupIndex));
+    await interaction.update(await renderQuestionnaire(guildId, discordId, groupIndex));
     return true;
   }
 
@@ -212,26 +213,27 @@ export async function handleQuestionnaire(interaction) {
     const weapons = await getWeapons();
     const group = buildGroups(weapons)[groupIndex];
     if (!group) {
-      await interaction.update(await renderQuestionnaire(discordId));
+      await interaction.update(await renderQuestionnaire(guildId, discordId));
       return true;
     }
 
     const selected = interaction.values.map(Number);
     await syncGroupSelection(
+      guildId,
       discordId,
       group.weapons.map((weapon) => weapon.id),
       selected,
       DEFAULT_RATING,
     );
 
-    await interaction.update(await renderQuestionnaire(discordId, groupIndex));
+    await interaction.update(await renderQuestionnaire(guildId, discordId, groupIndex));
     return true;
   }
 
   if (action === 'rate') {
     const groupIndex = Number(parts[2]);
     const weaponId = Number(interaction.values[0]);
-    await interaction.update(await renderRatePrompt(discordId, weaponId, groupIndex));
+    await interaction.update(await renderRatePrompt(guildId, discordId, weaponId, groupIndex));
     return true;
   }
 
@@ -239,22 +241,22 @@ export async function handleQuestionnaire(interaction) {
     const weaponId = Number(parts[2]);
     const value = Number(parts[3]);
     const groupIndex = Number(parts[4]);
-    await setRating(discordId, weaponId, value);
-    await interaction.update(await renderQuestionnaire(discordId, groupIndex));
+    await setRating(guildId, discordId, weaponId, value);
+    await interaction.update(await renderQuestionnaire(guildId, discordId, groupIndex));
     return true;
   }
 
   if (action === 'remove') {
     const weaponId = Number(parts[2]);
     const groupIndex = Number(parts[3]);
-    await setRating(discordId, weaponId, null);
-    await interaction.update(await renderQuestionnaire(discordId, groupIndex));
+    await setRating(guildId, discordId, weaponId, null);
+    await interaction.update(await renderQuestionnaire(guildId, discordId, groupIndex));
     return true;
   }
 
   if (action === 'back') {
     const groupIndex = Number(parts[2]);
-    await interaction.update(await renderQuestionnaire(discordId, groupIndex));
+    await interaction.update(await renderQuestionnaire(guildId, discordId, groupIndex));
     return true;
   }
 

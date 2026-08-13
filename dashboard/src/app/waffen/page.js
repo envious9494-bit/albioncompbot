@@ -1,12 +1,12 @@
 import weaponData from '@/data/weapons.json';
 import { sql } from '@/lib/db';
-import { requireOfficerPage } from '@/lib/guards';
+import { requireGuild } from '@/lib/guilds';
 import WeaponAdmin from './WeaponAdmin';
 
 export const dynamic = 'force-dynamic';
 
 export default async function WeaponsPage() {
-  await requireOfficerPage();
+  await requireGuild();
 
   const weapons = await sql`
     select id, name, category, item_id, icon, aliases, active

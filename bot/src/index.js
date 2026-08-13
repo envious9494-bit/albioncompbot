@@ -14,6 +14,7 @@ import {
   cancelEvent,
   createEvent,
   getComps,
+  hasGuildAccess,
   getOpenEvents,
   getPlayerWeapons,
   getWeapons,
@@ -27,6 +28,7 @@ import {
   setSignup,
   sql,
   touchBotStatus,
+  upsertGuild,
   upsertPlayer,
 } from './db.js';
 import { buildComposition } from './matching.js';
@@ -41,7 +43,10 @@ const CLIENT_ID = requireEnv('DISCORD_CLIENT_ID');
 const GUILD_ID = process.env.DISCORD_GUILD_ID || null;
 const DASHBOARD_URL = (process.env.DASHBOARD_URL || '').replace(/\/$/, '');
 const PING_ROLE_ID = process.env.PING_ROLE_ID || null;
-const OFFICER_IDS = new Set(
+// Gilt auf ALLEN Servern - gedacht fuer den Betreiber des Bots. Wer nur auf
+// einem bestimmten Server Offizier sein soll, wird im Dashboard unter
+// "Zugang" eingetragen.
+const SUPERADMIN_IDS = new Set(
   (process.env.OFFICER_IDS || '')
     .split(',')
     .map((id) => id.trim())
@@ -280,14 +285,16 @@ async function tick() {
 // ---------------------------------------------------------------------
 //  Interaktionen
 // ---------------------------------------------------------------------
-function isOfficer(interaction) {
-  if (OFFICER_IDS.size === 0) {
-    return interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild) ?? false;
-  }
-  return (
-    OFFICER_IDS.has(interaction.user.id) ||
-    (interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild) ?? false)
-  );
+/**
+ * Darf die Person auf diesem Server Timer erstellen und ins Dashboard?
+ * Drei Wege: das Discord-Recht "Server verwalten", ein Eintrag in der
+ * Zugangsliste dieses Servers, oder Betreiber des Bots.
+ */
+async function isOfficer(interaction) {
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return true;
+  if (SUPERADMIN_IDS.has(interaction.user.id)) return true;
+  if (!interaction.guildId) return false;
+  return hasGuildAccess(interaction.guildId, interaction.user.id);
 }
 
 function displayNameOf(interaction) {
@@ -356,7 +363,7 @@ async function handleAutocomplete(interaction) {
   const query = focused.value.toLowerCase();
 
   if (interaction.commandName === 'timer' && focused.name === 'comp') {
-    const comps = await getComps();
+    const comps = await getComps(interaction.guildId);
     await interaction.respond(
       comps
         .filter((c) => c.name.toLowerCase().includes(query))
@@ -382,14 +389,14 @@ async function handleAutocomplete(interaction) {
 
 async function handleCommand(interaction) {
   if (interaction.commandName === 'waffen') {
-    await upsertPlayer(interaction.user.id, displayNameOf(interaction));
-    const view = await renderQuestionnaire(interaction.user.id);
+    await upsertPlayer(interaction.guildId, interaction.user.id, displayNameOf(interaction));
+    const view = await renderQuestionnaire(interaction.guildId, interaction.user.id);
     await interaction.reply({ ...view, flags: MessageFlags.Ephemeral });
     return;
   }
 
   if (interaction.commandName === 'waffe') {
-    await upsertPlayer(interaction.user.id, displayNameOf(interaction));
+    await upsertPlayer(interaction.guildId, interaction.user.id, displayNameOf(interaction));
 
     const weaponId = Number(interaction.options.getString('waffe', true));
     const skill = interaction.options.getInteger('skill', true);
@@ -404,8 +411,8 @@ async function handleCommand(interaction) {
       return;
     }
 
-    await setRating(interaction.user.id, weaponId, skill === 0 ? null : skill);
-    const ratings = await getPlayerWeapons(interaction.user.id);
+    await setRating(interaction.guildId, interaction.user.id, weaponId, skill === 0 ? null : skill);
+    const ratings = await getPlayerWeapons(interaction.guildId, interaction.user.id);
 
     await interaction.reply({
       content:
@@ -419,7 +426,7 @@ async function handleCommand(interaction) {
 
   if (interaction.commandName !== 'timer') return;
 
-  if (!isOfficer(interaction)) {
+  if (!(await isOfficer(interaction))) {
     await interaction.reply({
       content: 'Nur Offiziere koennen Timer erstellen.',
       flags: MessageFlags.Ephemeral,
@@ -448,7 +455,7 @@ async function handleCommand(interaction) {
     return;
   }
 
-  const comps = await getComps();
+  const comps = await getComps(interaction.guildId);
   const comp = comps.find((c) => c.id === compId);
   if (!comp) {
     await interaction.reply({ content: 'Diese Comp gibt es nicht mehr.', flags: MessageFlags.Ephemeral });
@@ -504,7 +511,7 @@ async function handleButton(interaction) {
       await interaction.reply({ content: 'Event nicht gefunden.', flags: MessageFlags.Ephemeral });
       return;
     }
-    if (event.created_by !== interaction.user.id && !isOfficer(interaction)) {
+    if (event.created_by !== interaction.user.id && !(await isOfficer(interaction))) {
       await interaction.reply({
         content: 'Absagen darf nur, wer den Timer erstellt hat.',
         flags: MessageFlags.Ephemeral,
@@ -533,7 +540,7 @@ async function handleButton(interaction) {
   }
 
   const name = displayNameOf(interaction);
-  await upsertPlayer(interaction.user.id, name);
+  await upsertPlayer(interaction.guildId, interaction.user.id, name);
 
   if (action === 'out') {
     await removeSignup(eventId, interaction.user.id);
@@ -573,6 +580,7 @@ async function handleButton(interaction) {
 client.on(Events.GuildCreate, async (guild) => {
   if (GUILD_ID && guild.id !== GUILD_ID) return;
   try {
+    await upsertGuild(guild.id, guild.name, guild.icon);
     await registerCommandsOn(guild.id);
     console.log(`Auf "${guild.name}" (${guild.id}) eingeladen — Befehle registriert.`);
   } catch (error) {
@@ -580,8 +588,20 @@ client.on(Events.GuildCreate, async (guild) => {
   }
 });
 
+/** Traegt alle Server ein, auf denen der Bot gerade ist. */
+async function syncGuilds() {
+  for (const guild of client.guilds.cache.values()) {
+    try {
+      await upsertGuild(guild.id, guild.name, guild.icon);
+    } catch (error) {
+      console.error(`Server "${guild.name}" konnte nicht eingetragen werden:`, error.message);
+    }
+  }
+}
+
 client.once(Events.ClientReady, async () => {
   console.log(`Eingeloggt als ${client.user.tag} · Zeitzone ${TIMEZONE}`);
+  await syncGuilds();
   await registerCommands();
 
   // Waffenliste und Datenbankverbindung vorwaermen. Discord verwirft
