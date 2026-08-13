@@ -1,0 +1,18 @@
+{
+  "name": "albion-comp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Discord-Bot und Dashboard fuer Albion-Aufstellungen",
+  "//": "Diese Datei existiert fuer bot-hosting.net: der Hoster klont das Repo und startet im Wurzelverzeichnis. Ohne sie faende er weder Abhaengigkeiten noch einen Startbefehl. Ueber den Workspace bleibt die Abhaengigkeitsliste in bot/package.json die einzige Wahrheit - hier steht sie nicht doppelt. Das Dashboard ist bewusst KEIN Workspace: auf dem Bot-Host haben Next.js und React nichts verloren, und Vercel baut ohnehin direkt aus dashboard/.",
+  "workspaces": [
+    "bot"
+  ],
+  "scripts": {
+    "//start": "Direkt statt ueber npm --workspace: sonst legt npm seine eigene Fehlerausgabe ueber die Meldung des Bots, und auf der Hoster-Konsole sieht man statt 'DISCORD_TOKEN fehlt' nur Rauschen.",
+    "start": "node bot/src/index.js",
+    "test": "npm test --workspace bot"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
