@@ -25,6 +25,13 @@ const MAX_OPTIONS = 25;
 const DEFAULT_RATING = 5;
 
 /**
+ * Harte Grenze von Discord fuer den Text einer Nachricht. Etwas Luft gelassen:
+ * wird sie gerissen, kommt keine gekuerzte Nachricht, sondern gar keine -
+ * Discord antwortet mit "Invalid Form Body ... BASE_TYPE_MAX_LENGTH".
+ */
+const NACHRICHT_GRENZE = 1950;
+
+/**
  * Was die Zahlen bedeuten.
  *
  * Ohne das ist "7" eine Meinung: der eine haelt sich fuer eine 7, der
@@ -88,7 +95,18 @@ export function buildGroups(weapons) {
   return groups;
 }
 
-function summarise(weapons, ratings) {
+/**
+ * Uebersicht ueber das eigene Profil.
+ *
+ * @param budget Zeichen, die zur Verfuegung stehen. Eine Discord-Nachricht
+ *   darf 2000 haben, und der Fragebogen haengt darunter noch Zeilen an - die
+ *   muessen abgezogen sein, sonst weist Discord die ganze Nachricht ab.
+ *
+ * Wird es zu lang, wird nicht abgeschnitten, sondern gezaehlt statt
+ * aufgezaehlt. Ein abgehackter Satz mitten in der Waffenliste hilft
+ * niemandem, und bei 90 Waffen hilft die Aufzaehlung ohnehin nicht.
+ */
+export function summarise(weapons, ratings, budget = 1500) {
   if (ratings.size === 0) {
     return 'Du hast noch keine Waffe eingetragen. Fang mit einer Kategorie an.';
   }
@@ -102,13 +120,22 @@ function summarise(weapons, ratings) {
     byCategory.get(category).entries.push(`${weapon.name} \`${rating}\``);
   }
 
-  const lines = [`**Dein Waffenprofil** — ${ratings.size} Waffen`];
-  for (const [, { icon, entries }] of byCategory) {
-    lines.push(`${icon || '•'} ${entries.join(' · ')}`);
-  }
+  const kopf = `**Dein Waffenprofil** — ${ratings.size} Waffen`;
 
-  const text = lines.join('\n');
-  return text.length > 1900 ? `${text.slice(0, 1880)}\n…` : text;
+  const ausfuehrlich = [
+    kopf,
+    ...[...byCategory.values()].map(({ icon, entries }) => `${icon || '•'} ${entries.join(' · ')}`),
+  ].join('\n');
+  if (ausfuehrlich.length <= budget) return ausfuehrlich;
+
+  const gezaehlt = [
+    kopf,
+    ...[...byCategory].map(([kategorie, { icon, entries }]) => `${icon || '•'} ${kategorie} · ${entries.length}`),
+  ].join('\n');
+  if (gezaehlt.length <= budget) return gezaehlt;
+
+  // Selbst die Kategorienamen sprengen den Rahmen - dann bleibt der Kopf.
+  return kopf;
 }
 
 function categoryRow(groups, activeIndex) {
@@ -173,7 +200,11 @@ export async function renderQuestionnaire(guildId, discordId, groupIndex = null)
   const groups = buildGroups(weapons);
 
   const components = [categoryRow(groups, groupIndex)];
-  const lines = [summarise(weapons, ratings)];
+
+  // Erst den Anhang bauen, dann die Uebersicht mit dem, was uebrig bleibt.
+  // Andersherum lief die Nachricht ueber 2000 Zeichen, und Discord weist sie
+  // dann komplett ab - mit BASE_TYPE_MAX_LENGTH statt mit einer Kuerzung.
+  const anhang = [''];
 
   if (groupIndex != null && groups[groupIndex]) {
     const group = groups[groupIndex];
@@ -182,19 +213,20 @@ export async function renderQuestionnaire(guildId, discordId, groupIndex = null)
     const rating = rateRow(group, groupIndex, ratings);
     if (rating) components.push(rating);
 
-    lines.push('');
-    lines.push(
+    anhang.push(
       `**${group.label}** — hak an, was du spielen kannst. Neu angehakte Waffen starten bei ${DEFAULT_RATING}; über das untere Menü stellst du den Skill genau ein.`,
     );
   } else {
-    lines.push('');
-    lines.push(
+    anhang.push(
       `Skala **1–10**: ab **7** heißt es Fullspec, darunter geht es ums Lernen. ` +
         `Die genaue Bedeutung steht bei jeder Waffe dran.`,
     );
   }
 
-  return { content: lines.join('\n'), components };
+  const rest = anhang.join('\n');
+  const inhalt = [summarise(weapons, ratings, NACHRICHT_GRENZE - rest.length - 1), rest].join('\n');
+
+  return { content: inhalt, components };
 }
 
 /** Die Knopfreihen 1-10 fuer eine einzelne Waffe. */
