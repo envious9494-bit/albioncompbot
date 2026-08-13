@@ -58,9 +58,21 @@ export async function saveCompSlots(compId, slots, notes) {
     const weaponId = Number(slot.weaponId);
     const count = Number(slot.count);
     const priority = Number(slot.priority);
-    if (!Number.isInteger(weaponId) || weaponId <= 0) return;
-    if (!Number.isInteger(count) || count < 1 || count > 40) return;
-    if (!Number.isInteger(priority) || priority < 1 || priority > 5) return;
+
+    // Frueher sind unvollstaendige Zeilen hier stillschweigend
+    // verschwunden. Wer eine 35er-Comp speichert und 33 zurueckbekommt,
+    // sucht den Fehler ueberall - nur nicht beim Speichern. Lieber
+    // abbrechen und sagen, welche Zeile klemmt.
+    const zeile = index + 1;
+    if (!Number.isInteger(weaponId) || weaponId <= 0) {
+      throw new Error(`Zeile ${zeile}: es ist keine Waffe ausgewählt.`);
+    }
+    if (!Number.isInteger(count) || count < 1 || count > 40) {
+      throw new Error(`Zeile ${zeile}: die Anzahl muss zwischen 1 und 40 liegen.`);
+    }
+    if (!Number.isInteger(priority) || priority < 1 || priority > 5) {
+      throw new Error(`Zeile ${zeile}: die Priorität muss zwischen 1 und 5 liegen.`);
+    }
 
     clean.push({
       comp_id: compId,

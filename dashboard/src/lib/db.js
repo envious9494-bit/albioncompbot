@@ -16,6 +16,10 @@ export const sql =
     prepare: false, // noetig fuer den Transaction-Pooler von Supabase
     max: 4,
     idle_timeout: 30,
+    // Ohne Frist wartet eine haengende Verbindung sehr lange, und die Seite
+    // haengt mit. Nach 15 Sekunden lieber mit einem Fehler abbrechen - den
+    // sieht man, ein Ladebalken ohne Ende sagt nichts.
+    connect_timeout: 15,
   });
 
 if (process.env.NODE_ENV !== 'production') {

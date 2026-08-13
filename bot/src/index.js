@@ -428,7 +428,9 @@ async function handleCommand(interaction) {
       await interaction.reply({ content: BALANCE_AUS, flags: MessageFlags.Ephemeral });
       return;
     }
-    await interaction.reply(await buildLeaderboard(interaction.guildId, 0, interaction.guild?.name));
+    await interaction.reply(
+      await buildLeaderboard(interaction.guildId, 0, interaction.guild?.name, interaction.user.id),
+    );
     return;
   }
 
@@ -609,7 +611,12 @@ async function handleButton(interaction) {
   if (kind === 'lb') {
     const seite = Number(action);
     await interaction.update(
-      await buildLeaderboard(interaction.guildId, Number.isFinite(seite) ? seite : 0, interaction.guild?.name),
+      await buildLeaderboard(
+        interaction.guildId,
+        Number.isFinite(seite) ? seite : 0,
+        interaction.guild?.name,
+        interaction.user.id,
+      ),
     );
     return;
   }
@@ -705,7 +712,9 @@ async function handlePrefixCommand(message) {
   }
 
   if (name === 'leaderboard' || name === 'lb') {
-    await message.reply(await buildLeaderboard(message.guildId, 0, message.guild?.name));
+    await message.reply(
+      await buildLeaderboard(message.guildId, 0, message.guild?.name, message.author.id),
+    );
     return;
   }
 

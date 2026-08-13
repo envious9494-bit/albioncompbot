@@ -73,6 +73,23 @@ export async function adjustBalance({ guildId, discordId, displayName, delta, re
   });
 }
 
+/**
+ * Platz einer Person in der Rangliste, oder null bei leerem Konto.
+ * rank() statt row_number(): bei Gleichstand denselben Platz zu vergeben ist
+ * das, was jeder erwartet, der zwei gleiche Betraege nebeneinander sieht.
+ */
+export async function getRank(guildId, discordId) {
+  const [row] = await sql`
+    select rang from (
+      select discord_id, rank() over (order by amount desc) as rang
+      from balance
+      where guild_id = ${guildId} and amount <> 0
+    ) plaetze
+    where discord_id = ${discordId}
+  `;
+  return row ? Number(row.rang) : null;
+}
+
 export async function getLeaderboard(guildId, page = 0) {
   const [{ n }] = await sql`
     select count(*)::int as n from balance where guild_id = ${guildId} and amount <> 0
@@ -132,20 +149,19 @@ const FARBE_GOLD = 0xd9a441;
 const FARBE_PLUS = 0x57f287;
 const FARBE_MINUS = 0xed4245;
 
+/** Die Muenze vor jedem Betrag - eine Marke, die man ueberall wiedererkennt. */
+const GOLD = '🪙';
+
 /**
- * Rangliste als Codeblock. Anders als in Fliesstext stehen die Betraege
- * dadurch wirklich untereinander - bei einer Tabelle aus Zahlen ist genau
- * das der Punkt.
+ * Rangliste als nummerierte Liste.
+ *
+ * Frueher stand hier ein Codeblock, damit die Betraege wirklich
+ * untereinander stehen. Das war sauber ausgerichtet, sah aber aus wie eine
+ * Konsolenausgabe: keine Erwaehnungen, keine Farbe, feste Breite auch auf
+ * dem Handy. Lesbarkeit schlaegt hier die Spaltentreue.
  */
-export function renderLeaderboard({ rows, seite, seiten, gesamt }, guildName) {
-  const embed = new EmbedBuilder()
-    .setTitle('Rangliste')
-    .setColor(FARBE_GOLD)
-    .setFooter({
-      text: [guildName, seiten > 1 ? `Seite ${seite + 1}/${seiten}` : null, `${gesamt} Einträge`]
-        .filter(Boolean)
-        .join(' · '),
-    });
+export function renderLeaderboard({ rows, seite, seiten, gesamt }, guildName, eigenerPlatz = null) {
+  const embed = new EmbedBuilder().setTitle(`${GOLD} Rangliste`).setColor(FARBE_GOLD);
 
   if (rows.length === 0) {
     embed.setDescription(
@@ -154,41 +170,51 @@ export function renderLeaderboard({ rows, seite, seiten, gesamt }, guildName) {
     return embed;
   }
 
-  // Bewusst keine Medaillen-Emoji im Block: die sind breiter als eine Ziffer,
-  // und schon eine einzige davon schiebt alle folgenden Zeilen aus der Spalte.
-  // In einer Tabelle aus Zahlen ist die Ausrichtung der ganze Zweck.
-  const breite = Math.max(...rows.map((row) => formatAmount(BigInt(row.amount)).length));
-  const platzBreite = String(seite * PRO_SEITE + rows.length).length;
-
   const zeilen = rows.map((row, index) => {
-    const platz = String(seite * PRO_SEITE + index + 1).padStart(platzBreite);
-    const betrag = formatAmount(BigInt(row.amount)).padStart(breite);
+    const platz = seite * PRO_SEITE + index + 1;
     const name = row.display_name ?? row.discord_id;
-    return `${platz}  ${betrag}  ${name}`;
+    return `**${platz}.** ${name} · ${GOLD} ${formatAmount(BigInt(row.amount))}`;
   });
 
-  embed.setDescription(`\`\`\`\n${zeilen.join('\n')}\n\`\`\``);
+  embed.setDescription(zeilen.join('\n'));
+  embed.setFooter({
+    text: [
+      seiten > 1 ? `Seite ${seite + 1}/${seiten}` : null,
+      eigenerPlatz ? `Dein Platz: ${eigenerPlatz}.` : null,
+      `${gesamt} Einträge`,
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  });
+
   return embed;
 }
 
-/** Bestaetigung einer Buchung. */
+/**
+ * Bestaetigung einer Buchung - eine Zeile, mehr braucht es nicht.
+ * Der neue Stand steht als Kleingedrucktes darunter: nuetzlich, aber nichts,
+ * wofuer man die Meldung zweizeilig aufblasen muesste.
+ */
 export function renderBooking({ menge, abziehen, zielId, saldo, grund }) {
-  const embed = new EmbedBuilder()
-    .setColor(abziehen ? FARBE_MINUS : FARBE_PLUS)
-    .setDescription(
-      `${abziehen ? '−' : '+'} **${formatAmount(menge)}** Gold ${abziehen ? 'abgezogen von' : 'für'} <@${zielId}>`,
-    )
-    .addFields({ name: 'Neuer Stand', value: `**${formatAmount(saldo)}**`, inline: true });
+  const zeilen = [
+    abziehen
+      ? `❌ **${formatAmount(menge)}** ${GOLD} von <@${zielId}> abgezogen.`
+      : `✅ **${formatAmount(menge)}** ${GOLD} zu <@${zielId}> hinzugefügt.`,
+    `-# Neuer Stand: ${formatAmount(saldo)}${grund ? ` · ${grund}` : ''}`,
+  ];
 
-  if (grund) embed.addFields({ name: 'Grund', value: grund, inline: true });
-  return embed;
+  return new EmbedBuilder()
+    .setColor(abziehen ? FARBE_MINUS : FARBE_PLUS)
+    .setDescription(zeilen.join('\n'));
 }
 
 /** Kontostand einer Person. */
 export function renderBalance(zielId, saldo, selbst) {
   return new EmbedBuilder()
     .setColor(FARBE_GOLD)
-    .setDescription(`${selbst ? 'Du hast' : `<@${zielId}> hat`} **${formatAmount(saldo)}** Gold.`);
+    .setDescription(
+      `${selbst ? 'Du hast' : `<@${zielId}> hat`} **${formatAmount(saldo)}** ${GOLD}`,
+    );
 }
 
 export function leaderboardButtons(seite, seiten) {
@@ -211,11 +237,18 @@ export function leaderboardButtons(seite, seiten) {
   ];
 }
 
-/** Baut die komplette Rangliste-Antwort. */
-export async function buildLeaderboard(guildId, page, guildName) {
-  const daten = await getLeaderboard(guildId, page);
+/**
+ * Baut die komplette Rangliste-Antwort.
+ * @param viewerId Wer sie abruft - fuer "Dein Platz" in der Fusszeile.
+ */
+export async function buildLeaderboard(guildId, page, guildName, viewerId = null) {
+  const [daten, eigenerPlatz] = await Promise.all([
+    getLeaderboard(guildId, page),
+    viewerId ? getRank(guildId, viewerId) : null,
+  ]);
+
   return {
-    embeds: [renderLeaderboard(daten, guildName)],
+    embeds: [renderLeaderboard(daten, guildName, eigenerPlatz)],
     components: leaderboardButtons(daten.seite, daten.seiten),
   };
 }
