@@ -178,7 +178,7 @@ Actions*:
 
 | Secret | Woher |
 | --- | --- |
-| `BOTHOST_API_KEY` | [bot-hosting.net/developer](https://bot-hosting.net/developer) → *Manage API keys*, Rechte `files:write` und `deployments:power` |
+| `BOTHOST_API_KEY` | [bot-hosting.net/a/developer](https://bot-hosting.net/a/developer), Rechte `files:write` (Dateien schreiben), `deployments:power` (neu starten) und `deployments:read` (Konsole mitlesen) |
 | `BOTHOST_DEPLOYMENT` | die ID aus der Adresszeile des Deployments |
 
 Geschickt wird nur, was git kennt — Lokales und vor allem die `.env` bleiben
