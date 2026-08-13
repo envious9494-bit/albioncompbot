@@ -1,0 +1,18 @@
+# --- Zugangsdaten. Diese Zeilen bitte niemals entfernen. -------------
+.env
+.env.*
+!.env.example
+
+# --- Abhaengigkeiten und Baureste ------------------------------------
+node_modules/
+.next/
+out/
+.vercel
+*.log
+
+# --- Sonstiges -------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# Zwischenergebnis der Schema-Verkleinerung, wird nicht gebraucht
+db/schema.min.sql

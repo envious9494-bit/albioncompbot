@@ -1,0 +1,1098 @@
+[
+ {
+  "itemId": "T4_MAIN_SWORD",
+  "name": "Broadsword",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 0,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CLEAVER_HELL",
+  "name": "Carving Sword",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 10,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_SCIMITAR_MORGANA",
+  "name": "Clarent Blade",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 20,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CLAYMORE",
+  "name": "Claymore",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 30,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALSWORD",
+  "name": "Dual Swords",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 40,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALSCIMITAR_UNDEAD",
+  "name": "Galatine Pair",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 50,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_SWORD_CRYSTAL",
+  "name": "Infinity Blade",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 60,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CLAYMORE_AVALON",
+  "name": "Kingmaker",
+  "category": "Schwerter",
+  "icon": "⚔️",
+  "sortOrder": 70,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_AXE",
+  "name": "Battleaxe",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 80,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALAXE_KEEPER",
+  "name": "Bear Paws",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 90,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HALBERD_MORGANA",
+  "name": "Carrioncaller",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 100,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SCYTHE_CRYSTAL",
+  "name": "Crystal Reaper",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 110,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_AXE",
+  "name": "Greataxe",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 120,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HALBERD",
+  "name": "Halberd",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 130,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SCYTHE_HELL",
+  "name": "Infernal Scythe",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 140,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_AXE_AVALON",
+  "name": "Realmbreaker",
+  "category": "Äxte",
+  "icon": "🪓",
+  "sortOrder": 150,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_ROCKMACE_KEEPER",
+  "name": "Bedrock Mace",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 160,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_MACE_MORGANA",
+  "name": "Camlann Mace",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 170,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_MACE_CRYSTAL",
+  "name": "Dreadstorm Monarch",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 180,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_MACE",
+  "name": "Heavy Mace",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 190,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_MACE_HELL",
+  "name": "Incubus Mace",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 200,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_MACE",
+  "name": "Mace",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 210,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_FLAIL",
+  "name": "Morning Star",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 220,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALMACE_AVALON",
+  "name": "Oathkeepers",
+  "category": "Streitkolben",
+  "icon": "🔱",
+  "sortOrder": 230,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALHAMMER_HELL",
+  "name": "Forge Hammers",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 240,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HAMMER",
+  "name": "Great Hammer",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 250,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_RAM_KEEPER",
+  "name": "Grovekeeper",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 260,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_HAMMER",
+  "name": "Hammer",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 270,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HAMMER_AVALON",
+  "name": "Hand of Justice",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 280,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_POLEHAMMER",
+  "name": "Polehammer",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 290,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HAMMER_UNDEAD",
+  "name": "Tombhammer",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 300,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HAMMER_CRYSTAL",
+  "name": "Truebolt Hammer",
+  "category": "Hämmer",
+  "icon": "🔨",
+  "sortOrder": 310,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_COMBATSTAFF_MORGANA",
+  "name": "Black Monk Staff",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 320,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DOUBLEBLADEDSTAFF",
+  "name": "Double Bladed Staff",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 330,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_QUARTERSTAFF_AVALON",
+  "name": "Grailseeker",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 340,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_IRONCLADEDSTAFF",
+  "name": "Iron-clad Staff",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 350,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DOUBLEBLADEDSTAFF_CRYSTAL",
+  "name": "Phantom Twinblade",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 360,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_QUARTERSTAFF",
+  "name": "Quarterstaff",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 370,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_TWINSCYTHE_HELL",
+  "name": "Soulscythe",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 380,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ROCKSTAFF_KEEPER",
+  "name": "Staff of Balance",
+  "category": "Kampfstäbe",
+  "icon": "🥢",
+  "sortOrder": 390,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_SPEAR_LANCE_AVALON",
+  "name": "Daybreaker",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 400,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_GLAIVE",
+  "name": "Glaive",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 410,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_SPEAR_KEEPER",
+  "name": "Heron Spear",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 420,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SPEAR",
+  "name": "Pike",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 430,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_GLAIVE_CRYSTAL",
+  "name": "Rift Glaive",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 440,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_SPEAR",
+  "name": "Spear",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 450,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HARPOON_HELL",
+  "name": "Spirithunter",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 460,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_TRIDENT_UNDEAD",
+  "name": "Trinity Spear",
+  "category": "Speere",
+  "icon": "🗡️",
+  "sortOrder": 470,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_RAPIER_MORGANA",
+  "name": "Bloodletter",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 480,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DAGGER_KATAR_AVALON",
+  "name": "Bridled Fury",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 490,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CLAWPAIR",
+  "name": "Claws",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 500,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_DAGGER",
+  "name": "Dagger",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 510,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DAGGERPAIR",
+  "name": "Dagger Pair",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 520,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALSICKLE_UNDEAD",
+  "name": "Deathgivers",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 530,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_DAGGER_HELL",
+  "name": "Demonfang",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 540,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DAGGERPAIR_CRYSTAL",
+  "name": "Twin Slayers",
+  "category": "Dolche",
+  "icon": "🔪",
+  "sortOrder": 550,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_SET2",
+  "name": "Battle Bracers",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 560,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_IRONGAUNTLETS_HELL",
+  "name": "Black Hands",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 570,
+  "hasImage": false
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_SET1",
+  "name": "Brawler Gloves",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 580,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_AVALON",
+  "name": "Fists of Avalon",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 590,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_CRYSTAL",
+  "name": "Forcepulse Bracers",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 600,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_HELL",
+  "name": "Hellfire Hands",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 610,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_MORGANA",
+  "name": "Ravenstrike Cestus",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 620,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_SET3",
+  "name": "Spiked Gauntlets",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 630,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_KNUCKLES_KEEPER",
+  "name": "Ursine Maulers",
+  "category": "Kriegshandschuhe",
+  "icon": "🥊",
+  "sortOrder": 640,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_BOW",
+  "name": "Bow",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 650,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_BOW_KEEPER",
+  "name": "Bow of Badon",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 660,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_LONGBOW",
+  "name": "Longbow",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 670,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_BOW_AVALON",
+  "name": "Mistpiercer",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 680,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_BOW_CRYSTAL",
+  "name": "Skystrider Bow",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 690,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_BOW_HELL",
+  "name": "Wailing Bow",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 700,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_WARBOW",
+  "name": "Warbow",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 710,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_LONGBOW_UNDEAD",
+  "name": "Whispering Bow",
+  "category": "Bögen",
+  "icon": "🏹",
+  "sortOrder": 720,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALCROSSBOW_CRYSTAL",
+  "name": "Arclight Blasters",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 730,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DUALCROSSBOW_HELL",
+  "name": "Boltcasters",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 740,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CROSSBOW",
+  "name": "Crossbow",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 750,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CROSSBOW_CANNON_AVALON",
+  "name": "Energy Shaper",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 760,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CROSSBOWLARGE",
+  "name": "Heavy Crossbow",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 770,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_1HCROSSBOW",
+  "name": "Light Crossbow",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 780,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CROSSBOWLARGE_MORGANA",
+  "name": "Siegebow",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 790,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_REPEATINGCROSSBOW_UNDEAD",
+  "name": "Weeping Repeater",
+  "category": "Armbrüste",
+  "icon": "🎯",
+  "sortOrder": 800,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_INFERNOSTAFF_MORGANA",
+  "name": "Blazing Staff",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 810,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_FIRESTAFF_HELL",
+  "name": "Brimstone Staff",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 820,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_FIRE_RINGPAIR_AVALON",
+  "name": "Dawnsong",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 830,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_FIRESTAFF",
+  "name": "Fire Staff",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 840,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_FIRESTAFF_CRYSTAL",
+  "name": "Flamewalker Staff",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 850,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_FIRESTAFF",
+  "name": "Great Fire Staff",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 860,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_INFERNOSTAFF",
+  "name": "Infernal Staff",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 870,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_FIRESTAFF_KEEPER",
+  "name": "Wildfire Staff",
+  "category": "Feuerstäbe",
+  "icon": "🔥",
+  "sortOrder": 880,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DIVINESTAFF",
+  "name": "Divine Staff",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 890,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HOLYSTAFF_CRYSTAL",
+  "name": "Exalted Staff",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 900,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HOLYSTAFF_HELL",
+  "name": "Fallen Staff",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 910,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HOLYSTAFF",
+  "name": "Great Holy Staff",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 920,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_HOLYSTAFF_AVALON",
+  "name": "Hallowfall",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 930,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_HOLYSTAFF",
+  "name": "Holy Staff",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 940,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_HOLYSTAFF_MORGANA",
+  "name": "Lifetouch Staff",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 950,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_HOLYSTAFF_UNDEAD",
+  "name": "Redemption Staff",
+  "category": "Heiligenstäbe",
+  "icon": "💚",
+  "sortOrder": 960,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_NATURESTAFF_HELL",
+  "name": "Blight Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 970,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_NATURESTAFF_KEEPER",
+  "name": "Druidic Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 980,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_NATURESTAFF_CRYSTAL",
+  "name": "Forgebark Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 990,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_NATURESTAFF",
+  "name": "Great Nature Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 1000,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_NATURESTAFF_AVALON",
+  "name": "Ironroot Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 1010,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_NATURESTAFF",
+  "name": "Nature Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 1020,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_NATURESTAFF_KEEPER",
+  "name": "Rampant Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 1030,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_WILDSTAFF",
+  "name": "Wild Staff",
+  "category": "Naturstäbe",
+  "icon": "🌿",
+  "sortOrder": 1040,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_ARCANESTAFF",
+  "name": "Arcane Staff",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1050,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ARCANESTAFF_CRYSTAL",
+  "name": "Astral Staff",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1060,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ENIGMATICSTAFF",
+  "name": "Enigmatic Staff",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1070,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ARCANE_RINGPAIR_AVALON",
+  "name": "Evensong",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1080,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ARCANESTAFF",
+  "name": "Great Arcane Staff",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1090,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ENIGMATICORB_MORGANA",
+  "name": "Malevolent Locus",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1100,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ARCANESTAFF_HELL",
+  "name": "Occult Staff",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1110,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_ARCANESTAFF_UNDEAD",
+  "name": "Witchwork Staff",
+  "category": "Arkanstäbe",
+  "icon": "🔮",
+  "sortOrder": 1120,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_FROSTSTAFF_CRYSTAL",
+  "name": "Arctic Staff",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1130,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_FROSTSTAFF_AVALON",
+  "name": "Chillhowl",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1140,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_FROSTSTAFF",
+  "name": "Frost Staff",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1150,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_GLACIALSTAFF",
+  "name": "Glacial Staff",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1160,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_FROSTSTAFF",
+  "name": "Great Frost Staff",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1170,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_FROSTSTAFF_KEEPER",
+  "name": "Hoarfrost Staff",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1180,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ICEGAUNTLETS_HELL",
+  "name": "Icicle Staff",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1190,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_ICECRYSTAL_UNDEAD",
+  "name": "Permafrost Prism",
+  "category": "Froststäbe",
+  "icon": "❄️",
+  "sortOrder": 1200,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SKULLORB_HELL",
+  "name": "Cursed Skull",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1210,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_CURSEDSTAFF",
+  "name": "Cursed Staff",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1220,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CURSEDSTAFF_MORGANA",
+  "name": "Damnation Staff",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1230,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_DEMONICSTAFF",
+  "name": "Demonic Staff",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1240,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_CURSEDSTAFF",
+  "name": "Great Cursed Staff",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1250,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_CURSEDSTAFF_UNDEAD",
+  "name": "Lifecurse Staff",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1260,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_CURSEDSTAFF_CRYSTAL",
+  "name": "Rotcaller Staff",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1270,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_MAIN_CURSEDSTAFF_AVALON",
+  "name": "Shadowcaller",
+  "category": "Fluchstäbe",
+  "icon": "☠️",
+  "sortOrder": 1280,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_MORGANA",
+  "name": "Bloodmoon Staff",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1290,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_KEEPER",
+  "name": "Earthrune Staff",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1300,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_HELL",
+  "name": "Hellspawn Staff",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1310,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_AVALON",
+  "name": "Lightcaller",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1320,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_SET3",
+  "name": "Primal Staff",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1330,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_SET1",
+  "name": "Prowling Staff",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1340,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_SET2",
+  "name": "Rootbound Staff",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1350,
+  "hasImage": true
+ },
+ {
+  "itemId": "T4_2H_SHAPESHIFTER_CRYSTAL",
+  "name": "Stillgaze Staff",
+  "category": "Gestaltwandlerstäbe",
+  "icon": "🐺",
+  "sortOrder": 1360,
+  "hasImage": true
+ }
+]

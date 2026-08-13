@@ -1,0 +1,390 @@
+:root {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-2: #1e222b;
+  --border: #2a2f3a;
+  --text: #e6e8ec;
+  --muted: #9aa2b1;
+  --accent: #5865f2;
+  --accent-hover: #4752c4;
+  --green: #3ba55d;
+  --red: #ed4245;
+  --yellow: #d9a441;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+}
+
+/* ---------- Rahmen ---------- */
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  flex: 0 0 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 16px;
+  padding: 0 10px 16px;
+  letter-spacing: 0.2px;
+}
+
+.nav-link {
+  display: block;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+}
+
+.nav-link:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.nav-link.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.content {
+  flex: 1;
+  padding: 28px 32px 64px;
+  max-width: 1100px;
+}
+
+h1 {
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+
+h2 {
+  font-size: 16px;
+  margin: 28px 0 10px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+
+/* ---------- Bausteine ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 13px;
+}
+
+button,
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button:hover,
+.btn:hover {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-ghost {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover {
+  background: var(--border);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--border);
+}
+
+.btn-danger:hover {
+  background: rgba(237, 66, 69, 0.12);
+}
+
+input,
+select {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+input:focus,
+select:focus {
+  outline: 1px solid var(--accent);
+}
+
+input[type='range'] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--accent);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.badge-open {
+  color: var(--green);
+  border-color: rgba(59, 165, 93, 0.4);
+}
+
+.badge-locked {
+  color: #9aa6ff;
+  border-color: rgba(88, 101, 242, 0.4);
+}
+
+.notice {
+  border-left: 3px solid var(--yellow);
+  background: rgba(217, 164, 65, 0.08);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+/* ---------- Waffenprofil ---------- */
+.weapon-row {
+  display: grid;
+  grid-template-columns: 1fr 180px 42px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.weapon-row:last-child {
+  border-bottom: none;
+}
+
+.weapon-row .value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.weapon-row.has-rating .value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- Comp-Editor ---------- */
+.slot-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 90px 130px 1fr 40px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.slot-head {
+  display: grid;
+  grid-template-columns: 34px 1fr 90px 130px 1fr 40px;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+/* ---------- Event-Ansicht ---------- */
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 8px;
+}
+
+.comp-slot {
+  display: grid;
+  grid-template-columns: 34px 1fr 140px;
+  gap: 8px;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.comp-slot.empty {
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+.comp-slot .weapon {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.comp-slot .who {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.prio {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sticky-save {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, transparent, var(--bg) 40%);
+  padding: 20px 0 8px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+@media (max-width: 720px) {
+  .shell {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    flex: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    width: 100%;
+    padding-bottom: 8px;
+  }
+  .sidebar-footer {
+    border-top: none;
+    margin-left: auto;
+    margin-top: 0;
+    padding-top: 0;
+  }
+  .content {
+    padding: 20px 16px 48px;
+  }
+  .weapon-row {
+    grid-template-columns: 1fr 120px 36px;
+  }
+  .slot-row,
+  .slot-head {
+    grid-template-columns: 30px 1fr 70px 100px;
+  }
+  .slot-head span:nth-child(5),
+  .slot-head span:nth-child(6),
+  .slot-row .label-input,
+  .slot-row .remove-btn {
+    display: none;
+  }
+}
