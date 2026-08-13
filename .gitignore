@@ -16,3 +16,6 @@ Thumbs.db
 
 # Zwischenergebnis der Schema-Verkleinerung, wird nicht gebraucht
 db/schema.min.sql
+
+# Wegwerf-Skripte fuer einmalige Wartung
+bot/_*.mjs
