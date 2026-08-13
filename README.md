@@ -46,7 +46,7 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
 
 ### 1. Datenbank (Supabase)
 
-> Für das Projekt `yzbphovtcwecerrlsqmh` ist das **komplett erledigt** —
+> Für das eingerichtete Projekt ist das **komplett erledigt** —
 > 9 Tabellen mit RLS, alle Migrationen eingespielt, 139 Waffen importiert.
 > Bot und Dashboard sind darauf umgestellt. Diese Anleitung gilt für ein
 > neues Projekt.
@@ -105,8 +105,11 @@ Entwicklermodus an sein.
   Discord verlangt dafür, dass der Installations-Link unter *Installation* auf
   „Keine" steht; deshalb läuft die Einladung über die URL unten.
 - Nur **Gildeninstallation**, keine Nutzerinstallation.
-- Keine Privileged Intents nötig — der Bot kommt mit `Guilds` aus und liest
-  keine Nachrichteninhalte.
+- **Message Content Intent** ist eingeschaltet (Bot → Privileged Gateway
+  Intents). Die braucht nur das Balance-Board: `!balance` und `!leaderboard`
+  stehen als normale Nachrichten im Kanal, und ohne diese Berechtigung kämen
+  sie beim Bot inhaltsleer an. Wer nur die Slash-Befehle nutzt, kann sie
+  auslassen — die laufen auch ohne.
 
 **Bot einladen:** am einfachsten über das Dashboard. Nach dem Login kommt die
 Serverauswahl; dort steht neben jedem Server ohne Bot ein Einladen-Knopf. Der
