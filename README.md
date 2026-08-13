@@ -301,6 +301,18 @@ Minute aus, gilt er als aus.
 
 ### Sperrfrist
 
+### Balance aus heißt weg
+
+Ist das Board unter *Balance* ausgeschaltet, registriert der Bot `/balance`
+und `/leaderboard` auf diesem Server gar nicht erst — sie stehen dann nicht
+in der Befehlsauswahl. `!balance` und `!leaderboard` werden stillschweigend
+ignoriert, und die Blätter-Knöpfe an älteren Ranglisten tun nichts mehr.
+
+Der Umweg ist nötig, weil ein Slash-Befehl sich nicht ignorieren lässt:
+antwortet der Bot nicht, zeigt Discord „Die Anwendung hat nicht geantwortet".
+Der Schalter greift binnen fünf Sekunden — der Poll merkt die Änderung und
+registriert die Befehle neu.
+
 Unter *Events* steht ganz oben die **Standard-Sperrfrist** dieses Servers: so
 lange vor Start friert die Aufstellung ein und alle werden gepingt. Wer immer
 mit 15 Minuten fährt, stellt sie einmal ein statt sie bei jedem `/timer`

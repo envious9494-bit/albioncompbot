@@ -170,8 +170,42 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
+/** Befehle, die es nur bei eingeschaltetem Balance-Board gibt. */
+const BALANCE_BEFEHLE = new Set(['balance', 'leaderboard']);
+
+/**
+ * Registriert die Befehle auf einem Server.
+ *
+ * Ist das Balance-Board aus, kommen seine Befehle gar nicht erst mit: dann
+ * steht /balance in der Auswahl nicht drin, und es gibt nichts, worauf der
+ * Bot mit "ist ausgeschaltet" antworten muesste. Ein Slash-Befehl laesst
+ * sich naemlich nicht stillschweigend ignorieren - ohne Antwort zeigt
+ * Discord "Die Anwendung hat nicht geantwortet".
+ */
 async function registerCommandsOn(guildId) {
-  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guildId), { body: commands });
+  const mitBalance = await isBalanceEnabled(guildId).catch(() => false);
+  const body = mitBalance ? commands : commands.filter((c) => !BALANCE_BEFEHLE.has(c.name));
+  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guildId), { body });
+  balanceStand.set(guildId, mitBalance);
+}
+
+/** Womit die Befehle zuletzt registriert wurden - je Server. */
+const balanceStand = new Map();
+
+/**
+ * Schaltet jemand das Board im Dashboard um, muessen die Befehle neu
+ * registriert werden. Der Poll merkt es binnen fuenf Sekunden.
+ */
+async function balanceUmschaltungPruefen() {
+  for (const guildId of client.guilds.cache.keys()) {
+    const jetzt = await isBalanceEnabled(guildId).catch(() => null);
+    if (jetzt === null || jetzt === balanceStand.get(guildId)) continue;
+
+    await registerCommandsOn(guildId).catch((error) =>
+      console.error(`Befehle auf Server ${guildId} nicht aktualisiert:`, error.message),
+    );
+    console.log(`Balance-Board auf ${guildId} ${jetzt ? 'an' : 'aus'} - Befehle angepasst.`);
+  }
 }
 
 async function registerCommands() {
@@ -309,6 +343,7 @@ async function tick() {
   ticking = true;
   try {
     await touchBotStatus(client.user.tag, [...client.guilds.cache.keys()]);
+    await balanceUmschaltungPruefen();
 
     const events = await getOpenEvents();
     for (const event of events) {
@@ -418,14 +453,21 @@ async function handleAutocomplete(interaction) {
   }
 }
 
-/** Gemeinsame Absage, wenn das Balance-Board auf dem Server aus ist. */
-const BALANCE_AUS =
-  'Das Balance-Board ist auf diesem Server nicht aktiv. Ein Offizier kann es im Dashboard unter „Balance" einschalten.';
+/**
+ * Ist das Board aus, verschwindet der Befehl beim naechsten Poll aus der
+ * Auswahl. Bis dahin kann ein Client ihn noch anbieten - dann still
+ * abnicken und die Antwort gleich wieder wegnehmen. Ganz ohne Antwort
+ * zeigt Discord "Die Anwendung hat nicht geantwortet".
+ */
+async function stillVerwerfen(interaction) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  await interaction.deleteReply().catch(() => {});
+}
 
 async function handleCommand(interaction) {
   if (interaction.commandName === 'leaderboard') {
     if (!(await isBalanceEnabled(interaction.guildId))) {
-      await interaction.reply({ content: BALANCE_AUS, flags: MessageFlags.Ephemeral });
+      await stillVerwerfen(interaction);
       return;
     }
     await interaction.reply(
@@ -436,7 +478,7 @@ async function handleCommand(interaction) {
 
   if (interaction.commandName === 'balance') {
     if (!(await isBalanceEnabled(interaction.guildId))) {
-      await interaction.reply({ content: BALANCE_AUS, flags: MessageFlags.Ephemeral });
+      await stillVerwerfen(interaction);
       return;
     }
 
@@ -610,6 +652,13 @@ async function handleButton(interaction) {
   const eventId = Number(rawEventId);
 
   if (kind === 'lb') {
+    // Board zwischenzeitlich ausgeschaltet: die Knoepfe an alten Nachrichten
+    // bleiben ja stehen. Dann nichts tun, statt weiter Zahlen zu zeigen.
+    if (!(await isBalanceEnabled(interaction.guildId))) {
+      await interaction.deferUpdate().catch(() => {});
+      return;
+    }
+
     const seite = Number(action);
     await interaction.update(
       await buildLeaderboard(
@@ -707,8 +756,9 @@ async function handlePrefixCommand(message) {
   const name = (befehl || '').toLowerCase();
   if (!['balance', 'bal', 'leaderboard', 'lb'].includes(name)) return;
 
+  // Ausgeschaltet heisst ausgeschaltet: keine Antwort, kein Hinweis. Wer
+  // "!bal" tippt, soll nicht jedes Mal daran erinnert werden.
   if (!(await isBalanceEnabled(message.guildId))) {
-    await message.reply(BALANCE_AUS);
     return;
   }
 
