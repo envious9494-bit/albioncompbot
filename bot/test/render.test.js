@@ -124,6 +124,12 @@ describe('Leerer Timer', () => {
 });
 
 describe('hashComposition', () => {
+  // Ein einziges Event fuer alle Vergleiche. event() setzt starts_at aus
+  // Date.now(), und der Zeitpunkt geht in den Hash ein: zwei Aufrufe waeren
+  // schon durch eine verstrichene Millisekunde verschieden. Beim Test auf
+  // "ungleich" waere das besonders tueckisch - der wuerde gruen, ohne die
+  // Sache zu pruefen, um die es geht.
+  const ev = event();
   const basis = {
     slots: [slot(0)],
     bench: [{ discordId: '2', displayName: 'MrEnvi', bestRating: 0 }],
@@ -135,10 +141,10 @@ describe('hashComposition', () => {
     // Sonst wechselt die Person die Gruppe, das Embed wird aber nie neu
     // geschrieben - der Hinweis "trag /waffen ein" bliebe stehen.
     const nachher = { ...basis, bench: [{ ...basis.bench[0], bestRating: 6 }] };
-    assert.notEqual(hashComposition(event(), basis, []), hashComposition(event(), nachher, []));
+    assert.notEqual(hashComposition(ev, basis, []), hashComposition(ev, nachher, []));
   });
 
   it('bleibt gleich, wenn sich nichts aendert', () => {
-    assert.equal(hashComposition(event(), basis, []), hashComposition(event(), basis, []));
+    assert.equal(hashComposition(ev, basis, []), hashComposition(ev, basis, []));
   });
 });
