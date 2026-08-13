@@ -60,6 +60,56 @@ export async function getAccessibleGuilds() {
 }
 
 /**
+ * Fuer die Serverauswahl: alle Discord-Server, auf denen die Person Admin ist,
+ * plus die, auf denen sie freigeschaltet wurde. Auch solche, auf denen der Bot
+ * noch gar nicht ist - genau die will man ja einladen.
+ */
+export async function getGuildOverview() {
+  const session = await auth();
+  if (!session) return { session: null, guilds: [] };
+
+  const adminGuilds = session.user.guilds ?? [];
+  const [mitBot, botStatus] = await Promise.all([
+    getAccessibleGuilds().then((ergebnis) => ergebnis.guilds),
+    sql`select guild_ids from bot_status where id = 1`.then((rows) => rows[0]?.guild_ids ?? []),
+  ]);
+
+  const bekannt = new Map();
+
+  for (const guild of mitBot) {
+    bekannt.set(guild.id, {
+      id: guild.id,
+      name: guild.name ?? guild.id,
+      hatBot: botStatus.includes(guild.id),
+      istAdmin: Boolean(guild.via_discord),
+      freigeschaltet: Boolean(guild.via_liste),
+    });
+  }
+
+  // Discord-Server, auf denen der Bot noch fehlt
+  for (const guild of adminGuilds) {
+    if (bekannt.has(guild.id)) {
+      bekannt.get(guild.id).istAdmin = true;
+      if (!bekannt.get(guild.id).name) bekannt.get(guild.id).name = guild.name;
+      continue;
+    }
+    bekannt.set(guild.id, {
+      id: guild.id,
+      name: guild.name,
+      hatBot: false,
+      istAdmin: true,
+      freigeschaltet: false,
+    });
+  }
+
+  const guilds = [...bekannt.values()].sort(
+    (a, b) => Number(b.hatBot) - Number(a.hatBot) || a.name.localeCompare(b.name),
+  );
+
+  return { session, guilds };
+}
+
+/**
  * Fuer Seiten: liefert Sitzung, den gerade gewaehlten Server und alle
  * verfuegbaren. Wer keinen Server hat, landet auf "Kein Zutritt".
  */

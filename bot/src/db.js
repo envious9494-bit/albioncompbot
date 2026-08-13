@@ -1,13 +1,14 @@
 import postgres from 'postgres';
 
-if (!process.env.DATABASE_URL) {
-  console.error('DATABASE_URL fehlt. Trag den Connection-String aus Supabase in die .env ein.');
-  process.exit(1);
-}
+// Bewusst kein process.exit hier: dieses Modul wird auch von Dateien
+// importiert, die reine Hilfsfunktionen enthalten, und die sollen sich ohne
+// Datenbank testen lassen. Ob die Zugangsdaten da sind, prueft src/index.js
+// beim Start - dort gehoert der Abbruch hin.
+const VERBINDUNG = process.env.DATABASE_URL || 'postgres://ohne-konfiguration/none';
 
 // prepare:false ist noetig, weil Supabase im Transaction-Pooler-Modus (Port 6543)
 // keine Prepared Statements unterstuetzt. Mit dem Session-Pooler schadet es nicht.
-export const sql = postgres(process.env.DATABASE_URL, {
+export const sql = postgres(VERBINDUNG, {
   ssl: process.env.PGSSL === 'disable' ? false : 'require',
   prepare: false,
   max: 4,

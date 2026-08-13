@@ -18,6 +18,7 @@ export default function GuildSwitcher({ guilds, current }) {
 
   return (
     <form ref={formRef} action={selectGuild} style={{ padding: '0 10px 12px' }}>
+      <input type="hidden" name="weiter" value="nein" />
       <select
         name="guild_id"
         defaultValue={current?.id}

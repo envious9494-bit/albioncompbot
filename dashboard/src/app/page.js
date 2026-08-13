@@ -1,15 +1,13 @@
 import { redirect } from 'next/navigation';
 
-import { DEV_LOGIN } from '@/auth';
-import { getAccessibleGuilds } from '@/lib/guilds';
+import { auth, DEV_LOGIN } from '@/auth';
 import { devLoginAction, loginAction } from './actions/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const { session, guilds } = await getAccessibleGuilds();
-  if (session && guilds.length > 0) redirect('/events');
-  if (session) redirect('/kein-zutritt');
+  const session = await auth();
+  if (session) redirect('/server');
 
   return (
     <div className="login-wrap">

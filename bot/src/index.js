@@ -31,6 +31,17 @@ import {
   upsertGuild,
   upsertPlayer,
 } from './db.js';
+import {
+  adjustBalance,
+  buildLeaderboard,
+  canManageBalance,
+  formatAmount,
+  getBalance,
+  isBalanceEnabled,
+  parseAmount,
+  PREFIX,
+  resolveMember,
+} from './balance.js';
 import { buildComposition } from './matching.js';
 import { handleQuestionnaire, renderQuestionnaire } from './profile.js';
 import { buildEventButtons, buildEventEmbed, buildLockMessage, hashComposition } from './render.js';
@@ -38,6 +49,7 @@ import { parseStartTime, TIMEZONE } from './time.js';
 
 const TOKEN = requireEnv('DISCORD_TOKEN');
 const CLIENT_ID = requireEnv('DISCORD_CLIENT_ID');
+requireEnv('DATABASE_URL');
 // Optional: ohne Angabe registriert der Bot seine Befehle auf jedem Server,
 // auf dem er ist - und automatisch, sobald er auf einen neuen eingeladen wird.
 const GUILD_ID = process.env.DISCORD_GUILD_ID || null;
@@ -64,7 +76,16 @@ function requireEnv(name) {
   return value;
 }
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+// MessageContent ist eine privilegierte Berechtigung und muss im Developer
+// Portal eingeschaltet sein. Sie wird nur fuer die !-Befehle gebraucht - die
+// Slash-Befehle laufen auch ohne.
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 
 // ---------------------------------------------------------------------
 //  Slash-Commands
@@ -95,6 +116,48 @@ const commands = [
         .setDescription('Minuten vor Start, ab denen die Aufstellung steht (Standard 10)')
         .setMinValue(0)
         .setMaxValue(180),
+    )
+    .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName('leaderboard')
+    .setDescription('Zeigt die Gold-Rangliste dieses Servers')
+    .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName('balance')
+    .setDescription('Gold ansehen, vergeben oder abziehen')
+    .addSubcommand((sub) =>
+      sub
+        .setName('zeigen')
+        .setDescription('Kontostand ansehen')
+        .addUserOption((option) =>
+          option.setName('spieler').setDescription('Wessen Stand, sonst deiner'),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('geben')
+        .setDescription('Gold gutschreiben')
+        .addUserOption((option) =>
+          option.setName('spieler').setDescription('Wer bekommt es').setRequired(true),
+        )
+        .addStringOption((option) =>
+          option.setName('menge').setDescription('z.B. 500, 1.5k oder 2m').setRequired(true),
+        )
+        .addStringOption((option) => option.setName('grund').setDescription('Wofuer')),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('abziehen')
+        .setDescription('Gold abziehen')
+        .addUserOption((option) =>
+          option.setName('spieler').setDescription('Von wem').setRequired(true),
+        )
+        .addStringOption((option) =>
+          option.setName('menge').setDescription('z.B. 500, 1.5k oder 2m').setRequired(true),
+        )
+        .addStringOption((option) => option.setName('grund').setDescription('Warum')),
     )
     .toJSON(),
 
@@ -387,7 +450,85 @@ async function handleAutocomplete(interaction) {
   }
 }
 
+/** Gemeinsame Absage, wenn das Balance-Board auf dem Server aus ist. */
+const BALANCE_AUS =
+  'Das Balance-Board ist auf diesem Server nicht aktiv. Ein Offizier kann es im Dashboard unter „Balance" einschalten.';
+
 async function handleCommand(interaction) {
+  if (interaction.commandName === 'leaderboard') {
+    if (!(await isBalanceEnabled(interaction.guildId))) {
+      await interaction.reply({ content: BALANCE_AUS, flags: MessageFlags.Ephemeral });
+      return;
+    }
+    await interaction.reply(await buildLeaderboard(interaction.guildId, 0, interaction.guild?.name));
+    return;
+  }
+
+  if (interaction.commandName === 'balance') {
+    if (!(await isBalanceEnabled(interaction.guildId))) {
+      await interaction.reply({ content: BALANCE_AUS, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const unterbefehl = interaction.options.getSubcommand();
+
+    if (unterbefehl === 'zeigen') {
+      const ziel = interaction.options.getUser('spieler') ?? interaction.user;
+      const saldo = await getBalance(interaction.guildId, ziel.id);
+      const wessen = ziel.id === interaction.user.id ? 'Du hast' : `<@${ziel.id}> hat`;
+      await interaction.reply({
+        content: `${wessen} **${formatAmount(saldo)}** Gold.`,
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: { parse: [] },
+      });
+      return;
+    }
+
+    const darf = await canManageBalance(
+      interaction.guildId,
+      interaction.user.id,
+      interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild) ?? false,
+    );
+    if (!darf) {
+      await interaction.reply({
+        content: 'Du darfst kein Gold vergeben. Wer das darf, steht im Dashboard unter „Balance".',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const ziel = interaction.options.getUser('spieler', true);
+    const menge = parseAmount(interaction.options.getString('menge', true));
+    if (menge === null) {
+      await interaction.reply({
+        content: 'Die Menge verstehe ich nicht. Möglich sind z.B. `500`, `1.5k` oder `2m`.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const abziehen = unterbefehl === 'abziehen';
+    const grund = interaction.options.getString('grund');
+    const mitglied = await interaction.guild.members.fetch(ziel.id).catch(() => null);
+
+    const saldo = await adjustBalance({
+      guildId: interaction.guildId,
+      discordId: ziel.id,
+      displayName: mitglied?.nickname || ziel.globalName || ziel.username,
+      delta: abziehen ? -menge : menge,
+      reason: grund,
+      byId: interaction.user.id,
+    });
+
+    await interaction.reply({
+      content:
+        `${abziehen ? '➖' : '➕'} **${formatAmount(menge)}** Gold ${abziehen ? 'abgezogen von' : 'für'} ` +
+        `<@${ziel.id}>${grund ? ` — ${grund}` : ''}\nNeuer Stand: **${formatAmount(saldo)}**`,
+      allowedMentions: { parse: [] },
+    });
+    return;
+  }
+
   if (interaction.commandName === 'waffen') {
     await upsertPlayer(interaction.guildId, interaction.user.id, displayNameOf(interaction));
     const view = await renderQuestionnaire(interaction.guildId, interaction.user.id);
@@ -505,6 +646,14 @@ async function handleButton(interaction) {
   const [kind, action, rawEventId] = interaction.customId.split(':');
   const eventId = Number(rawEventId);
 
+  if (kind === 'lb') {
+    const seite = Number(action);
+    await interaction.update(
+      await buildLeaderboard(interaction.guildId, Number.isFinite(seite) ? seite : 0, interaction.guild?.name),
+    );
+    return;
+  }
+
   if (kind === 'ev' && action === 'cancel') {
     const [event] = await sql`select created_by from event where id = ${eventId}`;
     if (!event) {
@@ -569,6 +718,111 @@ async function handleButton(interaction) {
     await interaction.followUp({ content: hint, flags: MessageFlags.Ephemeral });
   }
 }
+
+// ---------------------------------------------------------------------
+//  Befehle mit Ausrufezeichen
+//
+//  Dasselbe wie /balance und /leaderboard, nur getippt. Braucht die
+//  MessageContent-Berechtigung; fehlt die, kommen hier schlicht keine
+//  Nachrichten an und die Slash-Befehle funktionieren trotzdem.
+// ---------------------------------------------------------------------
+
+/** Zerlegt "add \"Name\" 500 Grund" in seine Teile, Anfuehrungszeichen inklusive. */
+function naechstesWort(text) {
+  const treffer = String(text).match(/^(?:"([^"]*)"|'([^']*)'|(\S+))\s*([\s\S]*)$/);
+  if (!treffer) return { wort: null, rest: '' };
+  return { wort: treffer[1] ?? treffer[2] ?? treffer[3] ?? null, rest: treffer[4] ?? '' };
+}
+
+async function handlePrefixCommand(message) {
+  const { wort: befehl, rest } = naechstesWort(message.content.slice(PREFIX.length).trim());
+  const name = (befehl || '').toLowerCase();
+  if (!['balance', 'bal', 'leaderboard', 'lb'].includes(name)) return;
+
+  if (!(await isBalanceEnabled(message.guildId))) {
+    await message.reply(BALANCE_AUS);
+    return;
+  }
+
+  if (name === 'leaderboard' || name === 'lb') {
+    await message.reply(await buildLeaderboard(message.guildId, 0, message.guild?.name));
+    return;
+  }
+
+  const { wort: unterbefehl, rest: argumente } = naechstesWort(rest);
+  const aktion = (unterbefehl || '').toLowerCase();
+
+  // Ohne add/remove: Kontostand anzeigen
+  if (aktion !== 'add' && aktion !== 'remove') {
+    const erwaehnt = message.mentions.users.first();
+    const ziel = erwaehnt ?? message.author;
+    const saldo = await getBalance(message.guildId, ziel.id);
+    const wessen = ziel.id === message.author.id ? 'Du hast' : `<@${ziel.id}> hat`;
+    await message.reply({
+      content: `${wessen} **${formatAmount(saldo)}** Gold.`,
+      allowedMentions: { parse: [] },
+    });
+    return;
+  }
+
+  const darf = await canManageBalance(
+    message.guildId,
+    message.author.id,
+    message.member?.permissions?.has(PermissionFlagsBits.ManageGuild) ?? false,
+  );
+  if (!darf) {
+    await message.reply('Du darfst kein Gold vergeben. Wer das darf, steht im Dashboard unter „Balance".');
+    return;
+  }
+
+  const { wort: zielRoh, rest: nachZiel } = naechstesWort(argumente);
+  const ziel = await resolveMember(message, zielRoh);
+  if (ziel.fehler) {
+    await message.reply(ziel.fehler);
+    return;
+  }
+
+  const { wort: mengeRoh, rest: grundRoh } = naechstesWort(nachZiel);
+  const menge = parseAmount(mengeRoh);
+  if (menge === null) {
+    await message.reply(
+      'Die Menge verstehe ich nicht. Möglich sind z.B. `500`, `1.5k` oder `2m`.\n' +
+        `Beispiel: \`${PREFIX}balance add @Name 500 Castle-Fight\``,
+    );
+    return;
+  }
+
+  const abziehen = aktion === 'remove';
+  const grund = grundRoh.trim() || null;
+
+  const saldo = await adjustBalance({
+    guildId: message.guildId,
+    discordId: ziel.id,
+    displayName: ziel.name,
+    delta: abziehen ? -menge : menge,
+    reason: grund,
+    byId: message.author.id,
+  });
+
+  await message.reply({
+    content:
+      `${abziehen ? '➖' : '➕'} **${formatAmount(menge)}** Gold ${abziehen ? 'abgezogen von' : 'für'} ` +
+      `<@${ziel.id}>${grund ? ` — ${grund}` : ''}\nNeuer Stand: **${formatAmount(saldo)}**`,
+    allowedMentions: { parse: [] },
+  });
+}
+
+client.on(Events.MessageCreate, async (message) => {
+  if (message.author.bot || !message.guildId) return;
+  if (!message.content.startsWith(PREFIX)) return;
+
+  try {
+    await handlePrefixCommand(message);
+  } catch (error) {
+    console.error('Befehl fehlgeschlagen:', error);
+    await message.reply(`Fehler: ${error.message}`).catch(() => {});
+  }
+});
 
 // ---------------------------------------------------------------------
 //  Start

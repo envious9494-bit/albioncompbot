@@ -388,3 +388,26 @@ th {
     display: none;
   }
 }
+
+/* ---------- Serverauswahl ---------- */
+.server-wahl {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 20px 64px;
+}
+
+.server-wahl h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  margin: 28px 0 10px;
+}
+
+.server-karte {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}

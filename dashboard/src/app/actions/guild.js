@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import { getAccessibleGuilds, GUILD_COOKIE } from '@/lib/guilds';
 
@@ -23,4 +24,8 @@ export async function selectGuild(formData) {
   });
 
   revalidatePath('/', 'layout');
+
+  // Aus der Serverauswahl heraus soll es direkt weitergehen; der Umschalter in
+  // der Seitenleiste laesst einen dagegen dort, wo man gerade ist.
+  if (formData.get('weiter') !== 'nein') redirect('/events');
 }
