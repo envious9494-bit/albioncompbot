@@ -237,8 +237,10 @@ gemeint war. Und wenn die Sperrfrist fast so lang ist wie der Vorlauf (`/timer`
 in 11 Minuten bei 10 Minuten Sperre), warnt er — sonst friert die Aufstellung
 ein, bevor sich jemand anmelden konnte.
 
-Wer Timer erstellen darf, steht in `OFFICER_IDS`. Ist die Liste leer, darf jeder
-mit dem Recht *Server verwalten*.
+**Rechte gelten immer nur für einen Server.** Timer erstellen darf, wer dort
+*Server verwalten* hat oder im Dashboard unter **Zugang** eingetragen ist —
+sonst niemand. Es gibt bewusst kein serverübergreifendes Recht: wer den Bot
+betreibt, sieht deswegen keine fremden Comps, Profile oder Kontostände.
 
 **Absagen darf nur, wer den Timer erstellt hat** — auch kein Offizier sonst.
 Der Knopf steht zwar unter jeder Nachricht, weist aber jeden anderen ab und
@@ -345,16 +347,18 @@ Datenbankänderung: Bot einladen, fertig.
 
 ### Wer ins Dashboard darf
 
-Drei Wege, in dieser Reihenfolge geprüft:
+Zwei Wege, in dieser Reihenfolge geprüft:
 
 1. **Discord-Recht „Server verwalten"** auf dem betreffenden Server — kommt
    automatisch rein, muss nirgends eingetragen werden.
 2. **Freischaltung unter *Zugang*** im Dashboard. Dort kann jeder Berechtigte
    weitere Leute für *seinen* Server freischalten — entweder per Klick aus der
    Liste derer, die den Bot dort schon benutzt haben, oder per Discord-ID.
-3. **`OFFICER_IDS`** in der Konfiguration. Das gilt auf *allen* Servern und ist
-   für den Betreiber des Bots gedacht. Für den normalen Betrieb kann es leer
-   bleiben.
+
+Ein serverübergreifendes Recht gibt es **nicht** — auch nicht für den Betreiber.
+Früher konnte `OFFICER_IDS` das: wer dort stand, sah im Dashboard jeden Server,
+auf dem der Bot sitzt, und war dort als Admin markiert. Die Variable wird nicht
+mehr ausgewertet.
 
 Freigeschaltete sehen alles ihres Servers: Comps, Events und die Waffenprofile
 aller Member. Andere Server bleiben unsichtbar.

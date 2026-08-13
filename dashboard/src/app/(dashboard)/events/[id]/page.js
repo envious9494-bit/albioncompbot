@@ -11,7 +11,7 @@ import SlotLockPicker from './SlotLockPicker';
 export const dynamic = 'force-dynamic';
 
 export default async function EventPage({ params }) {
-  const { session, guild } = await requireGuild();
+  const { guild } = await requireGuild();
   const { id } = await params;
   const eventId = Number(id);
   if (!Number.isInteger(eventId)) notFound();
@@ -92,7 +92,7 @@ export default async function EventPage({ params }) {
       <div className="card">
         <div className="spread" style={{ marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Aufstellung</h2>
-          {session.user.isOfficer && isOpen && (
+          {isOpen && (
             <form action={clearAllLocks}>
               <input type="hidden" name="event_id" value={eventId} />
               <button type="submit" className="btn-ghost small">
@@ -139,7 +139,7 @@ export default async function EventPage({ params }) {
                   <div className="prio">Priorität {slot.priority}</div>
                 </div>
 
-                {session.user.isOfficer ? (
+                {isOpen ? (
                   <SlotLockPicker
                     eventId={eventId}
                     slotIndex={slot.slot_index}

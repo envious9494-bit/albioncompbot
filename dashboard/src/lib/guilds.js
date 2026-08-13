@@ -11,13 +11,6 @@ const GUILD_COOKIE = 'albion_guild';
  * entweder das Discord-Recht "Server verwalten" oder ein Eintrag in der
  * Zugangsliste des jeweiligen Servers.
  */
-const SUPERADMIN_IDS = new Set(
-  (process.env.OFFICER_IDS || '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean),
-);
-
 /**
  * Alle Server, die diese Person im Dashboard sehen darf.
  * Es kommen nur Server in Frage, auf denen der Bot auch ist.
@@ -28,15 +21,6 @@ export async function getAccessibleGuilds() {
 
   const discordId = session.user.discordId;
   const adminIds = (session.user.guilds ?? []).map((guild) => guild.id);
-
-  if (SUPERADMIN_IDS.has(discordId)) {
-    const alle = await sql`
-      select id, name, icon, true as via_discord, false as via_liste
-      from guild
-      order by name nulls last, id
-    `;
-    return { session, guilds: alle };
-  }
 
   const guilds = await sql`
     select g.id,

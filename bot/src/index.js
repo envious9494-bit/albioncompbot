@@ -56,16 +56,6 @@ requireEnv('DATABASE_URL');
 const GUILD_ID = process.env.DISCORD_GUILD_ID || null;
 const DASHBOARD_URL = (process.env.DASHBOARD_URL || '').replace(/\/$/, '');
 const PING_ROLE_ID = process.env.PING_ROLE_ID || null;
-// Gilt auf ALLEN Servern - gedacht fuer den Betreiber des Bots. Wer nur auf
-// einem bestimmten Server Offizier sein soll, wird im Dashboard unter
-// "Zugang" eingetragen.
-const SUPERADMIN_IDS = new Set(
-  (process.env.OFFICER_IDS || '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean),
-);
-
 const POLL_INTERVAL_MS = 5000;
 
 function requireEnv(name) {
@@ -375,7 +365,6 @@ async function tick() {
  */
 async function isOfficer(interaction) {
   if (interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return true;
-  if (SUPERADMIN_IDS.has(interaction.user.id)) return true;
   if (!interaction.guildId) return false;
   return hasGuildAccess(interaction.guildId, interaction.user.id);
 }

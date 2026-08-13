@@ -37,13 +37,6 @@ async function fetchAdminGuilds(accessToken) {
   }
 }
 
-export const OFFICER_IDS = new Set(
-  (process.env.OFFICER_IDS || '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean),
-);
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   providers: [
@@ -102,7 +95,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.user.discordId = token.discordId;
       session.user.displayName = token.displayName ?? session.user.name;
-      session.user.isOfficer = OFFICER_IDS.size === 0 || OFFICER_IDS.has(token.discordId);
       session.user.guilds = token.guilds ?? [];
       return session;
     },
