@@ -84,6 +84,62 @@ describe('Bank: die zwei Gruende auseinanderhalten', () => {
   });
 });
 
+describe('Aufstellung: ein Platz, eine Zeile', () => {
+  /** Nur die Felder der Aufstellung (das erste heisst so, die Folgefelder sind leer). */
+  function aufstellungsfelder(embed) {
+    const felder = embed.toJSON().fields ?? [];
+    const start = felder.findIndex((f) => f.name === 'Aufstellung');
+    const raus = felder.findIndex((f, i) => i > start && f.name !== '​');
+    return felder.slice(start, raus === -1 ? undefined : raus);
+  }
+
+  function komposition(anzahl, besetzt = 0) {
+    const slots = Array.from({ length: anzahl }, (_, i) =>
+      i < besetzt ? slot(i, { discordId: String(i), displayName: `Spieler${i}`, rating: 7 }) : slot(i),
+    );
+    return { slots, bench: [], filled: besetzt, total: anzahl };
+  }
+
+  it('listet drei gleiche Waffen als drei Zeilen, nicht als ×3', () => {
+    const felder = aufstellungsfelder(buildEventEmbed(event(), komposition(3, 1), []));
+    const zeilen = felder.flatMap((f) => f.value.split('\n'));
+    assert.equal(zeilen.length, 3);
+    assert.doesNotMatch(felder[0].value, /×3/);
+    assert.match(zeilen[0], /Spieler0/);
+    assert.match(zeilen[1], /frei/);
+    assert.match(zeilen[2], /frei/);
+  });
+
+  it('bleibt bei 20 Plaetzen einspaltig', () => {
+    const felder = aufstellungsfelder(buildEventEmbed(event(), komposition(20), []));
+    assert.equal(felder.length, 1);
+    assert.equal(felder[0].value.split('\n').length, 20);
+    assert.notEqual(felder[0].inline, true);
+  });
+
+  it('setzt ab 21 Plaetzen nebeneinander statt auf eine zweite Nachricht', () => {
+    const felder = aufstellungsfelder(buildEventEmbed(event(), komposition(21), []));
+    assert.equal(felder.length, 2);
+    assert.ok(felder.every((f) => f.inline === true), 'Spalten muessen inline sein');
+    // Alle 21 Plaetze sind da, keiner faellt weg
+    assert.equal(felder.flatMap((f) => f.value.split('\n')).length, 21);
+  });
+
+  it('haelt jedes Feld unter Discords 1024 Zeichen', () => {
+    const felder = aufstellungsfelder(buildEventEmbed(event(), komposition(60), []));
+    for (const feld of felder) {
+      assert.ok(feld.value.length <= 1024, `Feld ist ${feld.value.length} Zeichen lang`);
+    }
+    assert.equal(felder.flatMap((f) => f.value.split('\n')).length, 60);
+  });
+
+  it('behaelt die Reihenfolge der Comp', () => {
+    const felder = aufstellungsfelder(buildEventEmbed(event(), komposition(21, 21), []));
+    const zeilen = felder.flatMap((f) => f.value.split('\n'));
+    zeilen.forEach((zeile, i) => assert.match(zeile, new RegExp(`Spieler${i}\\b`)));
+  });
+});
+
 describe('Kopfzeile', () => {
   const leer = { slots: [slot(0)], bench: [], filled: 0, total: 1 };
 

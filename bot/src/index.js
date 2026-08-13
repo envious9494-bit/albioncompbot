@@ -17,14 +17,12 @@ import {
   getDefaultLockMinutes,
   hasGuildAccess,
   getOpenEvents,
-  getPlayerWeapons,
   getWeapons,
   loadEventState,
   lockEvent,
   removeSignup,
   saveAssignments,
   setMessageId,
-  setRating,
   setRenderHash,
   setSignup,
   sql,
@@ -167,26 +165,6 @@ const commands = [
   new SlashCommandBuilder()
     .setName('waffen')
     .setDescription('Trag ein, welche Waffen du spielen kannst und wie gut')
-    .toJSON(),
-
-  new SlashCommandBuilder()
-    .setName('waffe')
-    .setDescription('Einzelne Waffe schnell setzen oder entfernen')
-    .addStringOption((option) =>
-      option
-        .setName('waffe')
-        .setDescription('Welche Waffe')
-        .setRequired(true)
-        .setAutocomplete(true),
-    )
-    .addIntegerOption((option) =>
-      option
-        .setName('skill')
-        .setDescription('1 bis 10, oder 0 zum Entfernen')
-        .setRequired(true)
-        .setMinValue(0)
-        .setMaxValue(10),
-    )
     .toJSON(),
 ];
 
@@ -438,19 +416,6 @@ async function handleAutocomplete(interaction) {
     );
     return;
   }
-
-  if (interaction.commandName === 'waffe' && focused.name === 'waffe') {
-    const weapons = await getWeapons();
-    // Kurzformen mitdurchsuchen, damit "GH" auch "Great Holy Staff" findet
-    await interaction.respond(
-      weapons
-        .filter((weapon) =>
-          [weapon.name, ...(weapon.aliases ?? [])].join(' ').toLowerCase().includes(query),
-        )
-        .slice(0, 25)
-        .map((weapon) => ({ name: weapon.name, value: String(weapon.id) })),
-    );
-  }
 }
 
 /** Gemeinsame Absage, wenn das Balance-Board auf dem Server aus ist. */
@@ -533,35 +498,6 @@ async function handleCommand(interaction) {
     await upsertPlayer(interaction.guildId, interaction.user.id, displayNameOf(interaction));
     const view = await renderQuestionnaire(interaction.guildId, interaction.user.id);
     await interaction.reply({ ...view, flags: MessageFlags.Ephemeral });
-    return;
-  }
-
-  if (interaction.commandName === 'waffe') {
-    await upsertPlayer(interaction.guildId, interaction.user.id, displayNameOf(interaction));
-
-    const weaponId = Number(interaction.options.getString('waffe', true));
-    const skill = interaction.options.getInteger('skill', true);
-    const weapons = await getWeapons();
-    const weapon = weapons.find((entry) => entry.id === weaponId);
-
-    if (!weapon) {
-      await interaction.reply({
-        content: 'Bitte eine Waffe aus der Vorschlagsliste auswählen.',
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-
-    await setRating(interaction.guildId, interaction.user.id, weaponId, skill === 0 ? null : skill);
-    const ratings = await getPlayerWeapons(interaction.guildId, interaction.user.id);
-
-    await interaction.reply({
-      content:
-        skill === 0
-          ? `**${weapon.name}** aus deinem Profil entfernt. Du hast jetzt ${ratings.size} Waffen.`
-          : `**${weapon.name}** auf \`${skill}\` gesetzt. Du hast jetzt ${ratings.size} Waffen.`,
-      flags: MessageFlags.Ephemeral,
-    });
     return;
   }
 

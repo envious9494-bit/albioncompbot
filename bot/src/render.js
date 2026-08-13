@@ -52,32 +52,52 @@ function gruppiere(slots) {
   return [...gruppen.values()];
 }
 
-function gruppeAlsZeilen(gruppe) {
-  const gesamt = gruppe.besetzt.length + gruppe.frei;
-  const kopf = `${gruppe.icon} **${gruppe.name}**${gesamt > 1 ? ` ×${gesamt}` : ''}`;
+/** Bis hierhin eine Spalte. Darueber wird nebeneinander gesetzt. */
+const EINE_SPALTE_BIS = 20;
 
-  const namen = gruppe.besetzt.map(
-    (person) => `${person.name}${person.rating != null ? ` \`${person.rating}\`` : ''}${person.locked ? ' 📌' : ''}`,
-  );
-  if (gruppe.frei > 0) namen.push(`*${gruppe.frei}× frei*`);
+/** Ein Platz, eine Zeile - in der Reihenfolge der Comp. */
+function slotZeile(slot) {
+  const name = slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName;
+  const kopf = `${slot.icon || '•'} **${name}**`;
 
-  return `${kopf}\n${namen.join(' · ')}`;
+  if (!slot.discordId) return `${kopf} — *frei*`;
+
+  const person = slot.displayName ?? slot.discordId;
+  const rating = slot.rating != null ? ` \`${slot.rating}\`` : '';
+  return `${kopf} — ${person}${rating}${slot.locked ? ' 📌' : ''}`;
 }
 
-/** Teilt lange Aufstellungen auf mehrere Felder auf. */
-function inFelder(bloecke) {
-  const felder = [];
-  let aktuell = '';
+/**
+ * Verteilt die Zeilen auf Embed-Felder.
+ *
+ * Bis 20 Plaetze eine Spalte - das ist die uebliche Gruppengroesse, und
+ * untereinander liest sich eine Aufstellung am schnellsten. Darueber wird
+ * nebeneinander gesetzt statt eine zweite Nachricht anzufangen: die
+ * Aufstellung soll immer auf einen Blick da sein.
+ *
+ * Die 1024-Zeichen-Grenze je Feld kann trotzdem reissen, wenn Waffen lange
+ * Bezeichnungen tragen. Dann wird weiter aufgeteilt - lieber drei schmale
+ * Spalten als eine abgeschnittene.
+ */
+function inSpalten(zeilen) {
+  if (zeilen.length === 0) return ['—'];
 
-  for (const block of bloecke) {
-    if (aktuell && aktuell.length + block.length + 2 > FELD_GRENZE) {
-      felder.push(aktuell);
-      aktuell = '';
+  const proSpalte = zeilen.length <= EINE_SPALTE_BIS ? zeilen.length : Math.ceil(zeilen.length / 2);
+
+  const spalten = [];
+  for (let i = 0; i < zeilen.length; i += proSpalte) {
+    let block = [];
+    for (const zeile of zeilen.slice(i, i + proSpalte)) {
+      const laenge = block.join('\n').length + zeile.length + 1;
+      if (block.length && laenge > FELD_GRENZE) {
+        spalten.push(block.join('\n'));
+        block = [];
+      }
+      block.push(zeile);
     }
-    aktuell += (aktuell ? '\n\n' : '') + block;
+    if (block.length) spalten.push(block.join('\n'));
   }
-  if (aktuell) felder.push(aktuell);
-  return felder.length ? felder : ['—'];
+  return spalten;
 }
 
 function namensliste(namen, grenze = FELD_GRENZE) {
@@ -113,6 +133,9 @@ export function buildEventEmbed(event, composition, maybes) {
   // Ist die Sperrfrist schon durch, der Poll aber noch nicht gelaufen, waere
   // "wird vor 3 Minuten eingefroren" Unsinn - dann steht da "gleich".
   const sperreOffen = lockAt.getTime() > Date.now();
+  const niemandDa =
+    !steht && composition.filled === 0 && composition.bench.length === 0 && maybes.length === 0;
+
   embed.setDescription(
     [
       `${discordTime(startsAt, 'F')} · ${discordTime(startsAt, 'R')}`,
@@ -121,13 +144,23 @@ export function buildEventEmbed(event, composition, maybes) {
         : sperreOffen
           ? `Wird ${discordTime(lockAt, 'R')} eingefroren.`
           : 'Wird **gleich** eingefroren.',
-    ].join('\n'),
+      // In die Kopfzeile statt in ein eigenes Feld: ein Feld mit leerem Namen
+      // waere von einer Folgespalte der Aufstellung nicht zu unterscheiden.
+      niemandDa ? '-# Noch hat sich niemand angemeldet.' : null,
+    ]
+      .filter(Boolean)
+      .join('\n'),
   );
 
-  const gruppen = gruppiere(composition.slots);
-  const felder = inFelder(gruppen.map(gruppeAlsZeilen));
-  felder.forEach((feld, index) => {
-    embed.addFields({ name: index === 0 ? 'Aufstellung' : '​', value: feld });
+  const spalten = inSpalten(composition.slots.map(slotZeile));
+  spalten.forEach((spalte, index) => {
+    embed.addFields({
+      name: index === 0 ? 'Aufstellung' : '​',
+      value: spalte,
+      // Nur nebeneinander, wenn es mehr als eine Spalte gibt - ein
+      // einzelnes inline-Feld waere sonst unnoetig schmal.
+      inline: spalten.length > 1,
+    });
   });
 
   // Die Bank hat zwei voellig verschiedene Gruende, und genau die stand
@@ -137,11 +170,16 @@ export function buildEventEmbed(event, composition, maybes) {
   const nachruecker = composition.bench.filter((p) => p.bestRating > 0);
   const ohneWaffe = composition.bench.filter((p) => !p.bestRating);
 
+  // Steht die Aufstellung schon zweispaltig, duerfen diese Felder nicht auch
+  // inline sein: Discord fuellt Reihen zu dritt, und dann rutscht "Nachruecker"
+  // neben die zweite Spalte der Aufstellung.
+  const nebeneinander = spalten.length === 1;
+
   if (nachruecker.length) {
     embed.addFields({
       name: `Nachrücker · ${nachruecker.length}`,
       value: namensliste(nachruecker.map((p) => `${p.displayName} \`${p.bestRating}\``)),
-      inline: true,
+      inline: nebeneinander,
     });
   }
 
@@ -149,7 +187,7 @@ export function buildEventEmbed(event, composition, maybes) {
     embed.addFields({
       name: `Vielleicht · ${maybes.length}`,
       value: namensliste(maybes.map((m) => m.display_name)),
-      inline: true,
+      inline: nebeneinander,
     });
   }
 
@@ -158,10 +196,6 @@ export function buildEventEmbed(event, composition, maybes) {
       name: `Keine passende Waffe · ${ohneWaffe.length}`,
       value: `${namensliste(ohneWaffe.map((p) => p.displayName), FELD_GRENZE - 80)}\n-# Trag mit \`/waffen\` ein, was du spielen kannst — sonst kann dich der Bot nirgends einsetzen.`,
     });
-  }
-
-  if (!steht && composition.filled === 0 && composition.bench.length === 0 && maybes.length === 0) {
-    embed.addFields({ name: '​', value: '-# Noch hat sich niemand angemeldet.' });
   }
 
   embed.setFooter({

@@ -206,7 +206,6 @@ liegen; das Skript schreibt nur.
 | Befehl                     | Wer     | Was                                                        |
 | -------------------------- | ------- | ---------------------------------------------------------- |
 | `/waffen`                  | alle    | Fragebogen: Kategorie wählen, ankreuzen, Skill per Knopf setzen |
-| `/waffe <waffe> <0–10>`    | alle    | Einzelne Waffe schnell setzen; `0` entfernt sie             |
 | `/timer <comp> <zeit>`     | Offis   | Timer mit Anmeldung erstellen                               |
 
 Das Feld *zeit* bei `/timer` versteht:
@@ -257,8 +256,8 @@ dasselbe Maß. Der Schnitt liegt bei 7: ab da steht Fullspec.
 | `2` | nur mal ausprobiert |
 | `1` | zur Not, wenn sonst niemand da ist |
 
-`/waffe` ist die Abkürzung für eine einzelne Waffe. Bei 139 Waffen ist die
-Autovervollständigung aber unhandlich — zum Ausfüllen ist `/waffen` gedacht.
+Es gab mal ein `/waffe` für einzelne Waffen. Bei 139 Waffen war dessen
+Autovervollständigung unbrauchbar — der Fragebogen ersetzt es vollständig.
 
 ## Dashboard
 
