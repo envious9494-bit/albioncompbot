@@ -85,7 +85,7 @@ const WEAPON_CACHE_MS = 60_000;
 
 function ladeWaffen() {
   return sql`
-    select id, name, category, icon, item_id, aliases, sort_order
+    select id, name, category, icon, emoji, item_id, aliases, sort_order
     from weapon
     where active
     order by sort_order, name
@@ -250,7 +250,7 @@ export async function loadEventState(eventId) {
 
   const slots = await sql`
     select s.slot_index, s.weapon_id, s.priority, s.label, s.locked_discord_id,
-           w.name as weapon_name, w.category, w.icon
+           w.name as weapon_name, w.category, w.icon, w.emoji
     from event_slot s
     join weapon w on w.id = s.weapon_id
     where s.event_id = ${eventId}

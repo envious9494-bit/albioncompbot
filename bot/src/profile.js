@@ -137,6 +137,9 @@ function pickRow(group, groupIndex, ratings) {
         label: weapon.name,
         value: String(weapon.id),
         default: ratings.has(weapon.id),
+        // Das echte Item-Bild, sonst das Emoji der Kategorie. Bei 139 Namen
+        // ist das Bild oft schneller erkannt als der Name gelesen.
+        emoji: weapon.emoji || weapon.icon || undefined,
       })),
     );
   return new ActionRowBuilder().addComponents(menu);
@@ -157,6 +160,7 @@ function rateRow(group, groupIndex, ratings) {
           // Discord laesst 100 Zeichen zu; die laengste Stufe bleibt darunter.
           description: SKILL_STUFEN[stufe],
           value: String(weapon.id),
+          emoji: weapon.emoji || weapon.icon || undefined,
         };
       }),
     );

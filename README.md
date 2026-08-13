@@ -56,7 +56,7 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
    das legt alle Tabellen an. Die Waffen kommen später per Knopfdruck im
    Dashboard dazu.
    Bei einer Datenbank, die schon vor diesen Nachträgen angelegt wurde,
-   zusätzlich `db/002_bot_status.sql` bis `db/008_default_lock.sql` der Reihe
+   zusätzlich `db/002_bot_status.sql` bis `db/009_weapon_emoji.sql` der Reihe
    nach einspielen.
 3. Beim Ausführen fragt Supabase nach **Row Level Security**. Antwort:
    *Run and enable RLS*. Warum das wichtig ist, steht unten.
@@ -234,6 +234,29 @@ ein, bevor sich jemand anmelden konnte.
 
 Wer Timer erstellen darf, steht in `OFFICER_IDS`. Ist die Liste leer, darf jeder
 mit dem Recht *Server verwalten*.
+
+### Item-Bilder statt Emojis
+
+Jede Waffe trägt ihr echtes Albion-Item-Bild — in der Aufstellung, im Ping
+beim Einfrieren und im Fragebogen. Möglich macht das Discords
+*Application Emojis*: die App darf bis zu 2000 eigene Emojis besitzen und
+überall benutzen, wo sie schreibt, ohne dass die auf einem Server liegen.
+
+```bash
+cd bot && node scripts/sync-emojis.mjs
+```
+
+Holt zu jeder Waffe mit Item-ID das offizielle Render von Albion, lädt es
+hoch und schreibt die Auszeichnung nach `weapon.emoji`. Mehrfach ausführbar:
+Vorhandenes wird wiederverwendet, nach einem Waffen-Nachtrag also einfach
+nochmal laufen lassen. `--alle` lädt auch Vorhandenes neu, `--weg` löscht
+alles wieder (die Anzeige fällt dann von selbst auf die Kategorie-Emojis
+zurück).
+
+Stand: **136 von 139**. Ohne Bild bleiben `Battlemount` und `Scout` — beides
+keine Waffen — sowie `Black Hands`: für dessen Item-ID hat Albions
+Render-Dienst auf keiner Tier-Stufe ein Bild. Die ID ist nachweislich richtig
+(sie steht so im offiziellen Item-Dump), es fehlt auf deren Seite.
 
 ### Die Skala im Waffenprofil
 
