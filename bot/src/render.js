@@ -52,13 +52,30 @@ function gruppiere(slots) {
   return [...gruppen.values()];
 }
 
-/** Bis hierhin eine Spalte. Darueber wird nebeneinander gesetzt. */
-const EINE_SPALTE_BIS = 20;
+/** So viele Plaetze gehoeren untereinander, bevor daneben weitergeht. */
+const PRO_SPALTE = 20;
+
+/**
+ * Kuerzt die Emoji-Auszeichnung auf das Noetige.
+ *
+ * In "<:name:id>" loest Discord das Bild allein ueber die ID auf; der Name
+ * ist nur eine Beschriftung. Deshalb bleiben Bilder auch sichtbar, wenn
+ * jemand ein Emoji umbenennt - und deshalb duerfen wir ihn hier wegkuerzen.
+ *
+ * Das ist kein Geiz: "<:T4_MAIN_SWORD:1537414852631470080>" sind 36 Zeichen,
+ * und bei 1024 Zeichen je Feld entscheidet das darueber, ob 20 Plaetze in
+ * eine Spalte passen oder in zwei zerfallen.
+ */
+function kompaktesEmoji(icon) {
+  if (!icon) return '•';
+  const treffer = icon.match(/^<(a?):[^:]+:(\d+)>$/);
+  return treffer ? `<${treffer[1]}:w:${treffer[2]}>` : icon;
+}
 
 /** Ein Platz, eine Zeile - in der Reihenfolge der Comp. */
 function slotZeile(slot) {
   const name = slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName;
-  const kopf = `${slot.icon || '•'} **${name}**`;
+  const kopf = `${kompaktesEmoji(slot.icon)} **${name}**`;
 
   if (!slot.discordId) return `${kopf} — *frei*`;
 
@@ -82,22 +99,41 @@ function slotZeile(slot) {
 function inSpalten(zeilen) {
   if (zeilen.length === 0) return ['—'];
 
-  const proSpalte = zeilen.length <= EINE_SPALTE_BIS ? zeilen.length : Math.ceil(zeilen.length / 2);
-
-  const spalten = [];
-  for (let i = 0; i < zeilen.length; i += proSpalte) {
-    let block = [];
-    for (const zeile of zeilen.slice(i, i + proSpalte)) {
-      const laenge = block.join('\n').length + zeile.length + 1;
-      if (block.length && laenge > FELD_GRENZE) {
-        spalten.push(block.join('\n'));
-        block = [];
-      }
-      block.push(zeile);
-    }
-    if (block.length) spalten.push(block.join('\n'));
+  // Der Wunschschnitt: genau 20 je Spalte. Das ist keine willkuerliche
+  // Zahl, sondern eine Gruppe - die erste Spalte ist die erste Gruppe,
+  // die zweite der Rest. Bei 35 Plaetzen also 20 und 15, nicht 18 und 17.
+  const wunsch = [];
+  for (let i = 0; i < zeilen.length; i += PRO_SPALTE) {
+    wunsch.push(zeilen.slice(i, i + PRO_SPALTE).join('\n'));
   }
-  return spalten;
+  if (wunsch.every((stueck) => stueck.length <= FELD_GRENZE)) return wunsch;
+
+  // Passen 20 nicht ins Feld - lange Waffennamen fressen die Zeichen -,
+  // dann lieber eine Spalte mehr und alle gleich lang, als eine volle
+  // Spalte und ein einsamer Rest daneben.
+  // Der Rest wird einzeln auf die vorderen Spalten verteilt. Mit einem
+  // schlichten Math.ceil ergaeben 41 Zeilen auf 4 Spalten 11/11/11/8 - die
+  // letzte sichtbar kuerzer. So werden es 11/10/10/10.
+  const verteile = (anzahl) => {
+    const basis = Math.floor(zeilen.length / anzahl);
+    const rest = zeilen.length % anzahl;
+    const stuecke = [];
+    let i = 0;
+    for (let s = 0; s < anzahl; s += 1) {
+      const laenge = basis + (s < rest ? 1 : 0);
+      stuecke.push(zeilen.slice(i, i + laenge).join('\n'));
+      i += laenge;
+    }
+    return stuecke;
+  };
+
+  for (let anzahl = wunsch.length + 1; anzahl <= zeilen.length; anzahl += 1) {
+    const stuecke = verteile(anzahl);
+    if (stuecke.every((stueck) => stueck.length <= FELD_GRENZE)) return stuecke;
+  }
+
+  // Notausgang: eine einzelne Zeile ist laenger als ein ganzes Feld.
+  return zeilen.map((zeile) => zeile.slice(0, FELD_GRENZE));
 }
 
 function namensliste(namen, grenze = FELD_GRENZE) {

@@ -125,6 +125,53 @@ describe('Aufstellung: ein Platz, eine Zeile', () => {
     assert.equal(felder.flatMap((f) => f.value.split('\n')).length, 21);
   });
 
+  it('schneidet bei 20 - auch mit Item-Bildern, nicht irgendwo', () => {
+    // 35 Plaetze mit echten Emojis: das war der Fall, in dem es vorher in
+    // drei Spalten und eine einsame Zeile zerfallen ist.
+    const mitBild = {
+      slots: Array.from({ length: 35 }, (_, i) =>
+        slot(i, { icon: '<:T4_MAIN_SWORD:1537414852631470080>' }),
+      ),
+      bench: [],
+      filled: 0,
+      total: 35,
+    };
+    const felder = aufstellungsfelder(buildEventEmbed(event(), mitBild, []));
+    assert.equal(felder.length, 2, 'genau zwei Spalten');
+    assert.equal(felder[0].value.split('\n').length, 20, 'erste Spalte ist eine volle Gruppe');
+    assert.equal(felder[1].value.split('\n').length, 15, 'zweite Spalte der Rest');
+  });
+
+  it('teilt gleichmaessig statt eine volle Spalte und einen Rest', () => {
+    // Erzwingt die Zeichengrenze eine weitere Spalte, sollen alle aehnlich
+    // lang sein - nicht 20, 20 und eine einzelne Zeile daneben.
+    const lang = '<:T4_2H_IRONGAUNTLETS_HELL:1537414852631470080>';
+    const viele = {
+      slots: Array.from({ length: 41 }, (_, i) =>
+        slot(i, { icon: lang, weaponName: 'Ravenstrike Cestus' }),
+      ),
+      bench: [],
+      filled: 0,
+      total: 41,
+    };
+    const felder = aufstellungsfelder(buildEventEmbed(event(), viele, []));
+    const laengen = felder.map((f) => f.value.split('\n').length);
+    assert.ok(Math.max(...laengen) - Math.min(...laengen) <= 1, `ungleich: ${laengen}`);
+    assert.equal(laengen.reduce((a, b) => a + b, 0), 41);
+  });
+
+  it('kuerzt den Emoji-Namen, behaelt aber die ID', () => {
+    const mitBild = {
+      slots: [slot(0, { icon: '<:T4_MAIN_SWORD:1537414852631470080>' })],
+      bench: [],
+      filled: 0,
+      total: 1,
+    };
+    const wert = aufstellungsfelder(buildEventEmbed(event(), mitBild, []))[0].value;
+    assert.match(wert, /<:w:1537414852631470080>/);
+    assert.doesNotMatch(wert, /T4_MAIN_SWORD/);
+  });
+
   it('haelt jedes Feld unter Discords 1024 Zeichen', () => {
     const felder = aufstellungsfelder(buildEventEmbed(event(), komposition(60), []));
     for (const feld of felder) {
