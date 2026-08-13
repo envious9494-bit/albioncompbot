@@ -56,8 +56,8 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
    das legt alle Tabellen an. Die Waffen kommen später per Knopfdruck im
    Dashboard dazu.
    Bei einer Datenbank, die schon vor diesen Nachträgen angelegt wurde,
-   zusätzlich `db/002_bot_status.sql`, `db/003_weapon_icons.sql` und
-   `db/004_cleanup_seed.sql` einspielen.
+   zusätzlich `db/002_bot_status.sql` bis `db/005_multi_guild.sql` der Reihe
+   nach einspielen.
 3. Beim Ausführen fragt Supabase nach **Row Level Security**. Antwort:
    *Run and enable RLS*. Warum das wichtig ist, steht unten.
 4. Oben auf **Connect → Direct connection string → Transaction pooler** und den
@@ -183,7 +183,8 @@ mit dem Recht *Server verwalten*.
 | Comps     | Vorlagen bauen: Waffe, Anzahl, Priorität                             |
 | Spieler   | wer welche Waffen eingetragen hat, und wer noch gar keine            |
 | Waffen    | die Waffenliste pflegen                                              |
-| Einrichtung | Bot einladen, Server-ID und eigene Discord-ID abgreifen, Status prüfen |
+| Zugang    | wer für diesen Server ins Dashboard darf                            |
+| Einrichtung | Bot einladen, Status prüfen, Kennungen abgreifen                   |
 
 Die Seite **Einrichtung** ist der Startpunkt: sie zeigt, ob der Bot läuft und
 auf welchen Servern er sitzt, ob `DISCORD_GUILD_ID` und `OFFICER_IDS` gesetzt
@@ -191,10 +192,34 @@ sind, und liefert die IDs zum Kopieren. Der Bot meldet sich dafür alle fünf
 Sekunden in der Tabelle `bot_status`; bleibt das Lebenszeichen länger als eine
 Minute aus, gilt er als aus.
 
-Ins Dashboard kommt nur, wer in `OFFICER_IDS` steht. **Die Variable leer zu
-lassen heißt „jeder darf rein" — für die Produktion also unbedingt ausfüllen.**
-Zusätzlich lässt `DISCORD_GUILD_ID` nur Mitglieder deines Discord-Servers zur
-Anmeldung zu.
+### Mehrere Discord-Server
+
+Der Bot bedient beliebig viele Server gleichzeitig. **Jeder Server hat seine
+eigenen Comps, Events, Anmeldungen und Waffenprofile** — nichts davon ist
+zwischen Servern sichtbar. Geteilt ist nur die Waffenliste, weil Albion-Waffen
+überall dieselben sind.
+
+Wer mehrere Server verwaltet, wählt oben links in der Seitenleiste aus.
+
+Technisch steckt das nicht in getrennten Tabellen, sondern in einer
+Server-Kennung auf jeder Zeile. Ein neuer Server braucht deshalb keine
+Datenbankänderung: Bot einladen, fertig.
+
+### Wer ins Dashboard darf
+
+Drei Wege, in dieser Reihenfolge geprüft:
+
+1. **Discord-Recht „Server verwalten"** auf dem betreffenden Server — kommt
+   automatisch rein, muss nirgends eingetragen werden.
+2. **Freischaltung unter *Zugang*** im Dashboard. Dort kann jeder Berechtigte
+   weitere Leute für *seinen* Server freischalten — entweder per Klick aus der
+   Liste derer, die den Bot dort schon benutzt haben, oder per Discord-ID.
+3. **`OFFICER_IDS`** in der Konfiguration. Das gilt auf *allen* Servern und ist
+   für den Betreiber des Bots gedacht. Für den normalen Betrieb kann es leer
+   bleiben.
+
+Freigeschaltete sehen alles ihres Servers: Comps, Events und die Waffenprofile
+aller Member. Andere Server bleiben unsichtbar.
 
 In der Event-Ansicht kannst du pro Slot einen Spieler festnageln. Der Bot
 übernimmt das innerhalb von fünf Sekunden und rechnet den Rest drumherum neu.
