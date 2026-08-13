@@ -46,7 +46,7 @@ import {
 import { buildComposition } from './matching.js';
 import { handleQuestionnaire, renderQuestionnaire } from './profile.js';
 import { buildEventButtons, buildEventEmbed, buildLockMessage, hashComposition } from './render.js';
-import { parseStartTime, TIMEZONE } from './time.js';
+import { discordTime, parseStartTime, TIMEZONE } from './time.js';
 
 const TOKEN = requireEnv('DISCORD_TOKEN');
 const CLIENT_ID = requireEnv('DISCORD_CLIENT_ID');
@@ -105,7 +105,7 @@ const commands = [
     .addStringOption((option) =>
       option
         .setName('zeit')
-        .setDescription('z.B. 20:30, 14.08 20:30 oder +45 (in 45 Minuten)')
+        .setDescription('20:30 · 2030 · 20 · +45 · 90m · 2h · 14.08 20:30')
         .setRequired(true),
     )
     .addStringOption((option) =>
@@ -637,7 +637,27 @@ async function handleCommand(interaction) {
   await setMessageId(event.id, message.id);
   await refreshEvent(event.id, { force: true });
 
-  await interaction.editReply(`Timer erstellt: **${comp.name}**, ${event.slotCount} Slots.`);
+  // Die verstandene Zeit zurueckspiegeln. Wer "2030" tippt und "20:30" liest,
+  // merkt einen Vertipper sofort - vorher stand hier nur die Slot-Zahl.
+  const bestaetigung = [
+    `Timer erstellt: **${comp.name}**, ${event.slotCount} Slots.`,
+    `Start ${discordTime(startsAt, 'F')} (${discordTime(startsAt, 'R')}).`,
+  ];
+
+  // Sperrfrist laenger als der Vorlauf: die Aufstellung steht praktisch
+  // sofort, und niemand kommt zum Anmelden. Anlegen tun wir den Timer
+  // trotzdem - es kann gewollt sein -, aber ungesagt bleibt es nicht.
+  const vorlaufMs = startsAt.getTime() - Date.now();
+  const sperreMs = lockMinutes * 60_000;
+  if (sperreMs >= vorlaufMs - 60_000) {
+    const vorlaufMin = Math.max(1, Math.round(vorlaufMs / 60_000));
+    bestaetigung.push(
+      `⚠️ Die Sperrfrist von ${lockMinutes} Min ist fast so lang wie der Vorlauf von ${vorlaufMin} Min — ` +
+        `die Aufstellung friert sofort ein. Mit \`lock:0\` bleibt sie bis zum Start offen.`,
+    );
+  }
+
+  await interaction.editReply(bestaetigung.join('\n'));
 }
 
 async function handleButton(interaction) {

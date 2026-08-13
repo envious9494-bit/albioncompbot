@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test test/matching.test.js test/balance.test.js"
+    "test": "node --test"
   },
   "dependencies": {
     "discord.js": "^14.16.3",

@@ -109,13 +109,18 @@ export function buildEventEmbed(event, composition, maybes) {
     return embed;
   }
 
-  // Kopf: wann, und was als Naechstes passiert
+  // Kopf: wann, und was als Naechstes passiert.
+  // Ist die Sperrfrist schon durch, der Poll aber noch nicht gelaufen, waere
+  // "wird vor 3 Minuten eingefroren" Unsinn - dann steht da "gleich".
+  const sperreOffen = lockAt.getTime() > Date.now();
   embed.setDescription(
     [
       `${discordTime(startsAt, 'F')} · ${discordTime(startsAt, 'R')}`,
       steht
         ? '**Die Aufstellung steht.**'
-        : `Wird ${discordTime(lockAt, 'R')} eingefroren.`,
+        : sperreOffen
+          ? `Wird ${discordTime(lockAt, 'R')} eingefroren.`
+          : 'Wird **gleich** eingefroren.',
     ].join('\n'),
   );
 
@@ -125,13 +130,17 @@ export function buildEventEmbed(event, composition, maybes) {
     embed.addFields({ name: index === 0 ? 'Aufstellung' : '​', value: feld });
   });
 
-  // Bank und Vielleicht nebeneinander - beides sind kurze Namenslisten
-  if (composition.bench.length) {
+  // Die Bank hat zwei voellig verschiedene Gruende, und genau die stand
+  // bisher nirgends: wer keine der gesuchten Waffen im Profil hat (bestRating
+  // 0), sitzt aus einem anderen Grund da als wer nur knapp zweiter war. Fuer
+  // den Ersten ist es eine Aufforderung, fuer den Zweiten eine Information.
+  const nachruecker = composition.bench.filter((p) => p.bestRating > 0);
+  const ohneWaffe = composition.bench.filter((p) => !p.bestRating);
+
+  if (nachruecker.length) {
     embed.addFields({
-      name: `Bank · ${composition.bench.length}`,
-      value: namensliste(
-        composition.bench.map((p) => (p.bestRating ? `${p.displayName} \`${p.bestRating}\`` : p.displayName)),
-      ),
+      name: `Nachrücker · ${nachruecker.length}`,
+      value: namensliste(nachruecker.map((p) => `${p.displayName} \`${p.bestRating}\``)),
       inline: true,
     });
   }
@@ -144,15 +153,19 @@ export function buildEventEmbed(event, composition, maybes) {
     });
   }
 
+  if (ohneWaffe.length) {
+    embed.addFields({
+      name: `Keine passende Waffe · ${ohneWaffe.length}`,
+      value: `${namensliste(ohneWaffe.map((p) => p.displayName), FELD_GRENZE - 80)}\n-# Trag mit \`/waffen\` ein, was du spielen kannst — sonst kann dich der Bot nirgends einsetzen.`,
+    });
+  }
+
+  if (!steht && composition.filled === 0 && composition.bench.length === 0 && maybes.length === 0) {
+    embed.addFields({ name: '​', value: '-# Noch hat sich niemand angemeldet.' });
+  }
+
   embed.setFooter({
-    text: [
-      `Event #${event.id}`,
-      event.comp_name,
-      `${composition.filled}/${composition.total} besetzt`,
-      steht ? null : '/waffen für dein Profil',
-    ]
-      .filter(Boolean)
-      .join(' · '),
+    text: [`Event #${event.id}`, event.comp_name, `${composition.filled}/${composition.total} besetzt`].join(' · '),
   });
 
   return embed;
@@ -254,7 +267,10 @@ export function hashComposition(event, composition, maybes) {
     event.status,
     String(event.starts_at),
     ...composition.slots.map((s) => `${s.slotIndex}:${s.discordId ?? '-'}:${s.rating ?? '-'}`),
-    ...composition.bench.map((p) => p.discordId),
+    // bestRating gehoert dazu: es entscheidet, ob jemand unter "Nachruecker"
+    // oder unter "Keine passende Waffe" steht. Traegt er eine Waffe nach,
+    // aendert sich sonst nur die Anzeige - und die wuerde nie neu geschrieben.
+    ...composition.bench.map((p) => `${p.discordId}:${p.bestRating ?? 0}`),
     ...maybes.map((m) => m.discord_id),
   ];
   const eingabe = teile.join('|');

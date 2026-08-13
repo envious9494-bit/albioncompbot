@@ -202,10 +202,25 @@ liegen; das Skript schreibt nur.
 | `/waffe <waffe> <0–10>`    | alle    | Einzelne Waffe schnell setzen; `0` entfernt sie             |
 | `/timer <comp> <zeit>`     | Offis   | Timer mit Anmeldung erstellen                               |
 
-Bei `/timer` versteht das Feld *zeit*: `20:30`, `14.08 20:30`,
-`14.08.2026 20:30` und `+45` (in 45 Minuten, praktisch zum Ausprobieren).
+Das Feld *zeit* bei `/timer` versteht:
+
+| Eingabe | Bedeutung |
+| --- | --- |
+| `20:30` · `20.30` · `2030` | heute um 20:30, falls schon vorbei: morgen |
+| `20` | heute um 20:00 — eine blosse Zahl ist die volle Stunde |
+| `+45` · `45m` | in 45 Minuten |
+| `2h` · `1h30` · `1.5h` | in zwei bzw. anderthalb Stunden |
+| `14.08 20:30` | nächstes Vorkommen dieses Datums |
+| `14.08.2026 20:30` | genau dieses Datum |
+
 Uhrzeiten gelten in der Zeitzone aus `TIMEZONE`; im Discord sieht danach jeder
-seine eigene Ortszeit.
+seine eigene Ortszeit. Der Bot spiegelt die verstandene Zeit in der Bestätigung
+zurück — wer sich vertippt, sieht es sofort statt erst beim Start.
+
+Zahlen über 23 sind keine Stunde: auf `90` kommt der Hinweis, dass wohl `90m`
+gemeint war. Und wenn die Sperrfrist fast so lang ist wie der Vorlauf (`/timer`
+in 11 Minuten bei 10 Minuten Sperre), warnt er — sonst friert die Aufstellung
+ein, bevor sich jemand anmelden konnte.
 
 Wer Timer erstellen darf, steht in `OFFICER_IDS`. Ist die Liste leer, darf jeder
 mit dem Recht *Server verwalten*.
