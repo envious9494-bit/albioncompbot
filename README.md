@@ -210,6 +210,10 @@ Das Feld *zeit* bei `/timer` versteht:
 | `20` | heute um 20:00 — eine blosse Zahl ist die volle Stunde |
 | `+45` · `45m` | in 45 Minuten |
 | `2h` · `1h30` · `1.5h` | in zwei bzw. anderthalb Stunden |
+
+Ein führendes `+` ist bei jeder Dauer erlaubt, also auch `+2h` und `+90m`.
+Ohne `+` bleibt eine bloße Zahl die Uhrzeit: `20` ist 20:00, `+20` sind zwanzig
+Minuten.
 | `14.08 20:30` | nächstes Vorkommen dieses Datums |
 | `14.08.2026 20:30` | genau dieses Datum |
 

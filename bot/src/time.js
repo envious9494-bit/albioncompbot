@@ -114,13 +114,17 @@ function heuteOderMorgen(stunde, minute, timeZone) {
 export function parseStartTime(input, timeZone = TIMEZONE) {
   const raw = String(input).trim().replace(/\s+/g, ' ').toLowerCase();
 
-  // --- relativ: "+45", "45m", "2h", "1h30" ----------------------------
-  const relativMinuten = raw.match(/^\+(\d{1,4})$/) || raw.match(/^(\d{1,4})\s*m(?:in)?$/);
+  // --- relativ: "+45", "45m", "2h", "+2h", "1h30" ---------------------
+  // Das "+" ist ueberall erlaubt, nicht nur bei der blossen Zahl: wer "+45"
+  // und "2h" als Beispiele nebeneinander sieht, tippt irgendwann "+2h".
+  // Ohne "+" bleibt eine blosse Zahl aber die Uhrzeit - "20" ist 20:00,
+  // "+20" sind zwanzig Minuten.
+  const relativMinuten = raw.match(/^\+(\d{1,4})$/) || raw.match(/^\+?(\d{1,4})\s*m(?:in)?$/);
   if (relativMinuten) {
     return new Date(Date.now() + Number(relativMinuten[1]) * 60_000);
   }
 
-  const relativStunden = raw.match(/^(\d{1,2})(?:[.,](\d{1,2}))?\s*h(?:\s*(\d{1,2}))?$/);
+  const relativStunden = raw.match(/^\+?(\d{1,2})(?:[.,](\d{1,2}))?\s*h(?:\s*(\d{1,2}))?$/);
   if (relativStunden) {
     const [, h, bruch, min] = relativStunden;
     // "1.5h" und "1h30" meinen dasselbe, duerfen sich aber nicht addieren.

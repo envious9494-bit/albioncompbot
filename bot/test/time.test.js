@@ -40,6 +40,19 @@ describe('parseStartTime - relative Angaben', () => {
     assert.equal(inMinuten(parseStartTime('1h30', ZONE)), 90);
     assert.equal(inMinuten(parseStartTime('1.5h', ZONE)), 90);
   });
+
+  it('erlaubt das Plus vor jeder Dauer, nicht nur vor der blossen Zahl', () => {
+    // Wer "+45" und "2h" als Beispiele nebeneinander sieht, tippt "+2h".
+    assert.equal(inMinuten(parseStartTime('+2h', ZONE)), 120);
+    assert.equal(inMinuten(parseStartTime('+90m', ZONE)), 90);
+    assert.equal(inMinuten(parseStartTime('+1h30', ZONE)), 90);
+  });
+
+  it('haelt "+20" und "20" auseinander', () => {
+    // Mit Plus sind es zwanzig Minuten, ohne Plus ist es 20 Uhr.
+    assert.equal(inMinuten(parseStartTime('+20', ZONE)), 20);
+    assert.ok(inMinuten(parseStartTime('20', ZONE)) !== 20);
+  });
 });
 
 describe('parseStartTime - Uhrzeiten', () => {
