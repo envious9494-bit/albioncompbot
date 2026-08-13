@@ -71,10 +71,8 @@ export default async function AccessPage() {
               {freigeschaltet.map((eintrag) => (
                 <tr key={eintrag.discord_id}>
                   <td>{eintrag.display_name ?? <span className="muted">unbekannt</span>}</td>
-                  <td className="small muted" style={{ fontFamily: 'monospace' }}>
-                    {eintrag.discord_id}
-                  </td>
-                  <td className="small muted">
+                  <td className="small muted ip-data">{eintrag.discord_id}</td>
+                  <td className="small muted ip-data">
                     {new Date(eintrag.added_at).toLocaleDateString('de-DE')}
                   </td>
                   <td>
@@ -108,7 +106,7 @@ export default async function AccessPage() {
               {kandidaten.map((person) => (
                 <tr key={person.discord_id}>
                   <td>{person.display_name}</td>
-                  <td className="small muted" style={{ fontFamily: 'monospace', width: 200 }}>
+                  <td className="small muted ip-data" style={{ width: 200 }}>
                     {person.discord_id}
                   </td>
                   <td style={{ width: 130 }}>
@@ -142,7 +140,7 @@ export default async function AccessPage() {
             placeholder="z.B. 244423111204667392"
             required
             inputMode="numeric"
-            style={{ flex: '1 1 220px', fontFamily: 'monospace' }}
+            className="ip-data" style={{ flex: '1 1 220px' }}
           />
           <input name="display_name" placeholder="Name (optional)" style={{ flex: '1 1 160px' }} />
           <button type="submit">Freischalten</button>

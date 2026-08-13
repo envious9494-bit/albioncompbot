@@ -1,35 +1,90 @@
+/* =====================================================================
+   Instrumententafel
+
+   Uebernommen aus dem Noxa-Dashboard (siehe dessen DESIGN.md). Die Regeln,
+   die diese Oberflaeche zusammenhalten:
+
+   - Vier Graphitstufen mit kuehlem Stich. Tiefe liest man aus den Stufen
+     und den Haarlinien - es gibt hier keine Schatten.
+   - Kein Radius. Nichts ist abgerundet ausser echten runden Dingen.
+   - Die Hauptaktion traegt ueber Helligkeit, nicht ueber Farbe: fast weiss
+     auf Graphit. Farbe bleibt fuer Zustaende reserviert, damit ein farbiges
+     Element hier immer etwas bedeutet.
+   - Gemessene Werte (Zahlen, IDs, Zeiten) stehen in Mono mit gleicher
+     Ziffernbreite, damit sie in einer Spalte untereinander stehen.
+   ===================================================================== */
+
 :root {
-  --bg: #0f1115;
-  --surface: #171a21;
-  --surface-2: #1e222b;
-  --border: #2a2f3a;
-  --text: #e6e8ec;
-  --muted: #9aa2b1;
-  --accent: #5865f2;
-  --accent-hover: #4752c4;
-  --green: #3ba55d;
-  --red: #ed4245;
-  --yellow: #d9a441;
-  --radius: 10px;
+  /* Vier Stufen: Chassis, eingesetzte Platte, angehobene Flaeche, Bedienelement */
+  --background: 220 12% 7%;
+  --card: 220 11% 10%;
+  --popover: 220 11% 13%;
+  --secondary: 220 10% 15%;
+  --accent: 220 10% 17%;
+
+  --foreground: 220 14% 93%;
+  /* Sekundaertext ist aus dem Grundton getoent, nie grau */
+  --muted-foreground: 220 9% 61%;
+
+  /* Hauptaktion: fast weiss. Kein Blau, weil Farbe hier Zustand bedeutet. */
+  --primary: 220 20% 96%;
+  --primary-foreground: 220 14% 9%;
+
+  /* Haarlinien. Ein Pixel, wenig Kontrast, machen die ganze Struktur. */
+  --border: 220 9% 20%;
+
+  /* Zustaende. Nur hierfuer gibt es Farbe. */
+  --state-ok: 152 58% 46%;
+  --state-warn: 38 92% 55%;
+  --state-critical: 0 72% 56%;
+  --state-info: 210 90% 62%;
 }
 
 * {
   box-sizing: border-box;
+  border-color: hsl(var(--border));
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans), system-ui, sans-serif;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
+  font-feature-settings: 'rlig' 1, 'calt' 1;
+}
+
+::selection {
+  background-color: hsl(var(--primary) / 0.25);
+}
+
+/* Fokus ist ein Zustandsmerkmal und hier hart gezeichnet, kein weicher Schein. */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 1px;
 }
 
 a {
   color: inherit;
+}
+
+/* Gemessene Werte: IDs, Betraege, Zeiten, Skills. Ziffern stehen untereinander. */
+.ip-data {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Eingravierte Beschriftung ueber einer Reihe von Bedienelementen. */
+.ip-legend {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
 }
 
 /* ---------- Rahmen ---------- */
@@ -39,77 +94,87 @@ a {
 }
 
 .sidebar {
-  width: 220px;
-  flex: 0 0 220px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  padding: 20px 14px;
+  width: 216px;
+  flex: 0 0 216px;
+  background: hsl(var(--card));
+  border-right: 1px solid hsl(var(--border));
+  padding: 18px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .brand {
-  font-weight: 700;
-  font-size: 16px;
-  padding: 0 10px 16px;
-  letter-spacing: 0.2px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  padding: 0 10px 14px;
 }
 
 .nav-link {
   display: block;
-  padding: 9px 10px;
-  border-radius: 8px;
+  padding: 7px 10px;
   text-decoration: none;
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
+  border-left: 2px solid transparent;
 }
 
 .nav-link:hover {
-  background: var(--surface-2);
-  color: var(--text);
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
 }
 
+/* Die aktive Seite wird durch eine Markierung am Rand angezeigt, nicht durch
+   eine Farbflaeche - dieselbe Zurueckhaltung wie im Rest der Tafel. */
 .nav-link.active {
-  background: var(--accent);
-  color: #fff;
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border-left-color: hsl(var(--primary));
 }
 
 .sidebar-footer {
   margin-top: auto;
   padding: 12px 10px 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid hsl(var(--border));
   font-size: 13px;
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
 }
 
 .content {
   flex: 1;
   padding: 28px 32px 64px;
-  max-width: 1100px;
+  max-width: 1120px;
 }
 
 h1 {
-  font-size: 22px;
+  font-size: 21px;
+  font-weight: 600;
   margin: 0 0 4px;
+  letter-spacing: -0.01em;
 }
 
 h2 {
-  font-size: 16px;
-  margin: 28px 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 26px 0 10px;
 }
 
 .subtitle {
-  color: var(--muted);
-  margin: 0 0 24px;
+  color: hsl(var(--muted-foreground));
+  margin: 0 0 22px;
 }
 
 /* ---------- Bausteine ---------- */
+
+/* Eine Platte, ins Chassis eingesetzt. Sie reagiert nicht auf den Zeiger:
+   Hover ist ein Versprechen, dass beim Klick etwas passiert, und auf einer
+   Formularplatte passiert nichts. */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
   padding: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .row {
@@ -126,7 +191,7 @@ h2 {
 }
 
 .muted {
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
 }
 
 .small {
@@ -135,116 +200,150 @@ h2 {
 
 button,
 .btn {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: 1px solid hsl(var(--primary));
+  border-radius: 0;
+  padding: 7px 14px;
   font-size: 14px;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  transition: background-color 140ms ease;
 }
 
 button:hover,
 .btn:hover {
-  background: var(--accent-hover);
+  background: hsl(var(--primary) / 0.86);
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 
 .btn-ghost {
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
 }
 
 .btn-ghost:hover {
-  background: var(--border);
+  background: hsl(var(--accent));
 }
 
 .btn-danger {
   background: transparent;
-  color: var(--red);
-  border: 1px solid var(--border);
+  color: hsl(var(--state-critical));
+  border-color: hsl(var(--border));
 }
 
 .btn-danger:hover {
-  background: rgba(237, 66, 69, 0.12);
+  background: hsl(var(--state-critical) / 0.12);
+  border-color: hsl(var(--state-critical) / 0.5);
 }
 
 input,
-select {
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+select,
+textarea {
+  background: hsl(var(--popover));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0;
   padding: 7px 10px;
   font-size: 14px;
   font-family: inherit;
 }
 
-input:focus,
-select:focus {
-  outline: 1px solid var(--accent);
+input::placeholder {
+  color: hsl(var(--muted-foreground) / 0.7);
 }
 
 input[type='range'] {
   padding: 0;
   border: none;
   background: transparent;
-  accent-color: var(--accent);
+  accent-color: hsl(var(--primary));
+}
+
+input[type='checkbox'] {
+  accent-color: hsl(var(--primary));
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
 }
 
 th,
 td {
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   vertical-align: middle;
 }
 
-th {
-  color: var(--muted);
-  font-weight: 500;
-  font-size: 13px;
+thead th {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
 }
 
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background-color 130ms ease;
+}
+
+tbody tr:hover {
+  background: hsl(var(--accent) / 0.5);
+}
+
+/* Ein Kennzeichen traegt seinen Zustand ueber die Farbe des Punktes, nicht
+   ueber eine gefuellte Flaeche. */
 .badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 1px 8px;
-  border-radius: 20px;
   font-size: 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--muted);
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.7;
 }
 
 .badge-open {
-  color: var(--green);
-  border-color: rgba(59, 165, 93, 0.4);
+  color: hsl(var(--state-ok));
+  border-color: hsl(var(--state-ok) / 0.35);
 }
 
 .badge-locked {
-  color: #9aa6ff;
-  border-color: rgba(88, 101, 242, 0.4);
+  color: hsl(var(--state-info));
+  border-color: hsl(var(--state-info) / 0.35);
 }
 
 .notice {
-  border-left: 3px solid var(--yellow);
-  background: rgba(217, 164, 65, 0.08);
+  border-left: 2px solid hsl(var(--state-warn));
+  background: hsl(var(--state-warn) / 0.07);
   padding: 10px 14px;
-  border-radius: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-size: 14px;
 }
 
@@ -255,7 +354,7 @@ th {
   align-items: center;
   gap: 12px;
   padding: 6px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .weapon-row:last-child {
@@ -264,13 +363,13 @@ th {
 
 .weapon-row .value {
   text-align: right;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
 }
 
 .weapon-row.has-rating .value {
-  color: var(--text);
-  font-weight: 600;
+  color: hsl(var(--foreground));
 }
 
 /* ---------- Comp-Editor ---------- */
@@ -286,53 +385,60 @@ th {
   display: grid;
   grid-template-columns: 34px 1fr 90px 130px 1fr 40px;
   gap: 10px;
-  color: var(--muted);
-  font-size: 13px;
   margin-bottom: 6px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
 }
 
 /* ---------- Event-Ansicht ---------- */
 .comp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 8px;
+  gap: 1px;
+  background: hsl(var(--border));
+  border: 1px solid hsl(var(--border));
 }
 
+/* Die Plaetze sitzen in einem Raster aus Haarlinien - eine Reihe von
+   Anzeigen auf einer Tafel, keine einzeln schwebenden Kaertchen. */
 .comp-slot {
   display: grid;
   grid-template-columns: 34px 1fr 140px;
   gap: 8px;
   align-items: center;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
+  background: hsl(var(--card));
+  padding: 9px 10px;
 }
 
 .comp-slot.empty {
-  border-style: dashed;
-  opacity: 0.75;
+  background: hsl(var(--background));
 }
 
 .comp-slot .weapon {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
 }
 
 .comp-slot .who {
   font-size: 13px;
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
 }
 
 .prio {
-  font-size: 11px;
-  color: var(--muted);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.8);
 }
 
 .sticky-save {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(180deg, transparent, var(--bg) 40%);
+  background: linear-gradient(180deg, transparent, hsl(var(--background)) 45%);
   padding: 20px 0 8px;
   display: flex;
   gap: 10px;
@@ -348,6 +454,39 @@ th {
   padding: 24px;
 }
 
+/* ---------- Serverauswahl ---------- */
+.server-wahl {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 56px 20px 64px;
+}
+
+.server-wahl h2 {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  margin: 26px 0 8px;
+}
+
+.server-liste {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--border));
+  display: grid;
+  gap: 1px;
+}
+
+.server-karte {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: hsl(var(--card));
+  padding: 14px 16px;
+}
+
 @media (max-width: 720px) {
   .shell {
     flex-direction: column;
@@ -359,11 +498,19 @@ th {
     flex-wrap: wrap;
     align-items: center;
     border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid hsl(var(--border));
   }
   .brand {
     width: 100%;
     padding-bottom: 8px;
+  }
+  .nav-link {
+    border-left: none;
+    border-bottom: 2px solid transparent;
+  }
+  .nav-link.active {
+    border-left: none;
+    border-bottom-color: hsl(var(--primary));
   }
   .sidebar-footer {
     border-top: none;
@@ -387,27 +534,4 @@ th {
   .slot-row .remove-btn {
     display: none;
   }
-}
-
-/* ---------- Serverauswahl ---------- */
-.server-wahl {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 48px 20px 64px;
-}
-
-.server-wahl h2 {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--muted);
-  margin: 28px 0 10px;
-}
-
-.server-karte {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 10px;
 }

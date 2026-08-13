@@ -35,11 +35,12 @@ import {
   adjustBalance,
   buildLeaderboard,
   canManageBalance,
-  formatAmount,
   getBalance,
   isBalanceEnabled,
   parseAmount,
   PREFIX,
+  renderBalance,
+  renderBooking,
   resolveMember,
 } from './balance.js';
 import { buildComposition } from './matching.js';
@@ -280,7 +281,7 @@ async function updateMessage(event, composition, maybes) {
     const channel = await client.channels.fetch(event.channel_id);
     const message = await channel.messages.fetch(event.message_id);
     await message.edit({
-      embeds: [buildEventEmbed(event, composition, maybes, DASHBOARD_URL)],
+      embeds: [buildEventEmbed(event, composition, maybes)],
       components: buildEventButtons(event, DASHBOARD_URL),
     });
   } catch (error) {
@@ -475,11 +476,9 @@ async function handleCommand(interaction) {
     if (unterbefehl === 'zeigen') {
       const ziel = interaction.options.getUser('spieler') ?? interaction.user;
       const saldo = await getBalance(interaction.guildId, ziel.id);
-      const wessen = ziel.id === interaction.user.id ? 'Du hast' : `<@${ziel.id}> hat`;
       await interaction.reply({
-        content: `${wessen} **${formatAmount(saldo)}** Gold.`,
+        embeds: [renderBalance(ziel.id, saldo, ziel.id === interaction.user.id)],
         flags: MessageFlags.Ephemeral,
-        allowedMentions: { parse: [] },
       });
       return;
     }
@@ -521,9 +520,7 @@ async function handleCommand(interaction) {
     });
 
     await interaction.reply({
-      content:
-        `${abziehen ? '➖' : '➕'} **${formatAmount(menge)}** Gold ${abziehen ? 'abgezogen von' : 'für'} ` +
-        `<@${ziel.id}>${grund ? ` — ${grund}` : ''}\nNeuer Stand: **${formatAmount(saldo)}**`,
+      embeds: [renderBooking({ menge, abziehen, zielId: ziel.id, saldo, grund })],
       allowedMentions: { parse: [] },
     });
     return;
@@ -632,7 +629,7 @@ async function handleCommand(interaction) {
   composition.slots = emptySlots;
 
   const message = await interaction.channel.send({
-    embeds: [buildEventEmbed(event, composition, [], DASHBOARD_URL)],
+    embeds: [buildEventEmbed(event, composition, [])],
     components: buildEventButtons(event, DASHBOARD_URL),
   });
 
@@ -757,9 +754,8 @@ async function handlePrefixCommand(message) {
     const erwaehnt = message.mentions.users.first();
     const ziel = erwaehnt ?? message.author;
     const saldo = await getBalance(message.guildId, ziel.id);
-    const wessen = ziel.id === message.author.id ? 'Du hast' : `<@${ziel.id}> hat`;
     await message.reply({
-      content: `${wessen} **${formatAmount(saldo)}** Gold.`,
+      embeds: [renderBalance(ziel.id, saldo, ziel.id === message.author.id)],
       allowedMentions: { parse: [] },
     });
     return;
@@ -805,9 +801,7 @@ async function handlePrefixCommand(message) {
   });
 
   await message.reply({
-    content:
-      `${abziehen ? '➖' : '➕'} **${formatAmount(menge)}** Gold ${abziehen ? 'abgezogen von' : 'für'} ` +
-      `<@${ziel.id}>${grund ? ` — ${grund}` : ''}\nNeuer Stand: **${formatAmount(saldo)}**`,
+    embeds: [renderBooking({ menge, abziehen, zielId: ziel.id, saldo, grund })],
     allowedMentions: { parse: [] },
   });
 }

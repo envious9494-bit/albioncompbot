@@ -41,7 +41,8 @@ export default function CopyField({ value, label }) {
         value={value}
         aria-label={label}
         onFocus={(event) => event.target.select()}
-        style={{ flex: 1, fontFamily: 'monospace' }}
+        className="ip-data"
+        style={{ flex: 1 }}
       />
       <button type="button" className="btn-ghost" onClick={copy} style={{ whiteSpace: 'nowrap' }}>
         {state === 'copied' ? 'Kopiert' : state === 'selected' ? 'Markiert – Strg+C' : 'Kopieren'}

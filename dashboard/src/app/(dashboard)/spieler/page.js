@@ -13,7 +13,7 @@ export default async function PlayersPage() {
       from player p
       left join player_weapon pw on pw.guild_id = p.guild_id and pw.discord_id = p.discord_id
       where p.guild_id = ${guild.id}
-      group by p.discord_id
+      group by p.guild_id, p.discord_id
       order by lower(p.display_name)
     `,
     sql`

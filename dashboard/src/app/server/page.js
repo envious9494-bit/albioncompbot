@@ -49,11 +49,12 @@ export default async function ServerPage() {
       {mitBot.length > 0 && (
         <>
           <h2>Bereit</h2>
+          <div className="server-liste">
           {mitBot.map((guild) => (
-            <div className="card server-karte" key={guild.id}>
+            <div className="server-karte" key={guild.id}>
               <div>
                 <strong>{guild.name}</strong>
-                <div className="small muted">
+                <div className="small muted" style={{ marginTop: 2 }}>
                   {guild.istAdmin ? 'Du bist Admin' : 'Du wurdest freigeschaltet'}
                 </div>
               </div>
@@ -63,6 +64,24 @@ export default async function ServerPage() {
               </form>
             </div>
           ))}
+          </div>
+        </>
+      )}
+
+      {/* Die Liste der eigenen Server kommt aus der Discord-Anmeldung. Ist sie
+          leer, liegt das an der Sitzung und nicht daran, dass es keine gibt -
+          das muss dastehen, sonst sucht man an der falschen Stelle. */}
+      {ohneBot.length === 0 && (session.user.guilds ?? []).length === 0 && (
+        <>
+          <h2>Bot fehlt noch</h2>
+          <div className="card">
+            <p className="small muted" style={{ margin: 0 }}>
+              Deine übrigen Discord-Server kann ich gerade nicht sehen. Die Liste kommt beim
+              Anmelden von Discord — melde dich einmal ab und wieder an, dann stehen hier alle
+              Server, auf denen du den Bot einladen dürftest. Beim Test-Login gibt es sie gar
+              nicht.
+            </p>
+          </div>
         </>
       )}
 
@@ -72,8 +91,9 @@ export default async function ServerPage() {
           <p className="small muted" style={{ marginTop: -4 }}>
             Deine Server, auf denen der Bot noch nicht ist. Nach dem Einladen tauchen sie oben auf.
           </p>
+          <div className="server-liste">
           {ohneBot.map((guild) => (
-            <div className="card server-karte" key={guild.id}>
+            <div className="server-karte" key={guild.id}>
               <div>
                 <strong>{guild.name}</strong>
                 <div className="small muted">Bot noch nicht eingeladen</div>
@@ -87,6 +107,7 @@ export default async function ServerPage() {
               )}
             </div>
           ))}
+          </div>
         </>
       )}
     </div>

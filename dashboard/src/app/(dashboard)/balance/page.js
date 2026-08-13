@@ -85,7 +85,7 @@ export default async function BalancePage() {
               {manager.map((person) => (
                 <tr key={person.discord_id}>
                   <td>{person.display_name ?? <span className="muted">unbekannt</span>}</td>
-                  <td className="small muted" style={{ fontFamily: 'monospace', width: 200 }}>
+                  <td className="small muted ip-data" style={{ width: 200 }}>
                     {person.discord_id}
                   </td>
                   <td style={{ width: 110 }}>
@@ -110,7 +110,7 @@ export default async function BalancePage() {
             placeholder="Discord-ID"
             required
             inputMode="numeric"
-            style={{ flex: '1 1 200px', fontFamily: 'monospace' }}
+            className="ip-data" style={{ flex: '1 1 200px' }}
           />
           <input name="display_name" placeholder="Name (optional)" style={{ flex: '1 1 150px' }} />
           <button type="submit" className="btn-ghost">
@@ -140,7 +140,7 @@ export default async function BalancePage() {
                 <tr key={konto.discord_id}>
                   <td className="muted">{index + 1}</td>
                   <td>{konto.display_name ?? konto.discord_id}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  <td className="ip-data" style={{ textAlign: 'right' }}>
                     {gold.format(BigInt(konto.amount))}
                   </td>
                 </tr>
@@ -169,7 +169,7 @@ export default async function BalancePage() {
             <tbody>
               {buchungen.map((eintrag, index) => (
                 <tr key={`${eintrag.created_at}-${index}`}>
-                  <td className="small muted">
+                  <td className="small muted ip-data">
                     {new Date(eintrag.created_at).toLocaleString('de-DE', {
                       dateStyle: 'short',
                       timeStyle: 'short',
@@ -177,19 +177,16 @@ export default async function BalancePage() {
                   </td>
                   <td>{eintrag.display_name ?? eintrag.discord_id}</td>
                   <td
+                    className="ip-data"
                     style={{
                       textAlign: 'right',
-                      fontVariantNumeric: 'tabular-nums',
-                      color: BigInt(eintrag.delta) < 0n ? 'var(--red)' : 'var(--green)',
+                      color: `hsl(var(--state-${BigInt(eintrag.delta) < 0n ? 'critical' : 'ok'}))`,
                     }}
                   >
                     {BigInt(eintrag.delta) > 0n ? '+' : ''}
                     {gold.format(BigInt(eintrag.delta))}
                   </td>
-                  <td
-                    className="muted"
-                    style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
-                  >
+                  <td className="muted ip-data" style={{ textAlign: 'right' }}>
                     {gold.format(BigInt(eintrag.saldo_danach))}
                   </td>
                   <td className="small muted">{eintrag.reason ?? '—'}</td>

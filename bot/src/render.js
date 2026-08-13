@@ -1,38 +1,88 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import { discordTime } from './time.js';
 
-const COLOR_OPEN = 0x3ba55d;
-const COLOR_LOCKED = 0x5865f2;
-const COLOR_CANCELLED = 0x99aab5;
+// =====================================================================
+//  Anzeige im Discord
+//
+//  Farbe bedeutet Zustand, nichts sonst. Die Beschreibung traegt das
+//  Layout; Felder sind fuer abgegrenzte Bloecke da, nicht fuer jede Zeile.
+//
+//  Wichtigste Entscheidung: die Aufstellung wird nach Waffe gebuendelt
+//  statt Platz fuer Platz aufgelistet. Bei einer 20er-Comp sind das vier
+//  Zeilen statt zwanzig, und man sieht auf einen Blick, wo es klemmt.
+// =====================================================================
 
-/** Discord erlaubt 1024 Zeichen pro Feld - laengere Comps werden aufgeteilt. */
-const FIELD_LIMIT = 950;
+const FARBE_OFFEN = 0x5865f2; // Blurple: Anmeldung laeuft
+const FARBE_STEHT = 0x57f287; // Gruen: Aufstellung steht
+const FARBE_ABGESAGT = 0x99aab5; // Grau: erledigt
 
-function chunkLines(lines) {
-  const chunks = [];
-  let current = '';
-  for (const line of lines) {
-    if (current.length + line.length + 1 > FIELD_LIMIT) {
-      chunks.push(current);
-      current = '';
+/** Discord erlaubt 1024 Zeichen pro Feld. */
+const FELD_GRENZE = 1000;
+
+/**
+ * Fasst gleiche Plaetze zusammen. Zwei Plaetze gehoeren zusammen, wenn
+ * Waffe und Bezeichnung uebereinstimmen - ein "Main Tank" bleibt also vom
+ * gewoehnlichen Heavy Mace getrennt.
+ */
+function gruppiere(slots) {
+  const gruppen = new Map();
+
+  for (const slot of slots) {
+    const schluessel = `${slot.weaponId}|${slot.label ?? ''}`;
+    if (!gruppen.has(schluessel)) {
+      gruppen.set(schluessel, {
+        icon: slot.icon || '•',
+        name: slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName,
+        besetzt: [],
+        frei: 0,
+      });
     }
-    current += (current ? '\n' : '') + line;
+    const gruppe = gruppen.get(schluessel);
+    if (slot.discordId) {
+      gruppe.besetzt.push({
+        name: slot.displayName ?? slot.discordId,
+        rating: slot.rating,
+        locked: slot.locked,
+      });
+    } else {
+      gruppe.frei += 1;
+    }
   }
-  if (current) chunks.push(current);
-  return chunks.length ? chunks : ['—'];
+
+  return [...gruppen.values()];
 }
 
-function slotLine(slot) {
-  // Symbol kommt aus der Waffenfamilie in der Datenbank
-  const icon = slot.icon || '•';
-  const weapon = slot.label ? `${slot.label} (${slot.weaponName})` : slot.weaponName;
+function gruppeAlsZeilen(gruppe) {
+  const gesamt = gruppe.besetzt.length + gruppe.frei;
+  const kopf = `${gruppe.icon} **${gruppe.name}**${gesamt > 1 ? ` ×${gesamt}` : ''}`;
 
-  if (!slot.discordId) {
-    return `${icon} **${weapon}** · *frei*`;
+  const namen = gruppe.besetzt.map(
+    (person) => `${person.name}${person.rating != null ? ` \`${person.rating}\`` : ''}${person.locked ? ' 📌' : ''}`,
+  );
+  if (gruppe.frei > 0) namen.push(`*${gruppe.frei}× frei*`);
+
+  return `${kopf}\n${namen.join(' · ')}`;
+}
+
+/** Teilt lange Aufstellungen auf mehrere Felder auf. */
+function inFelder(bloecke) {
+  const felder = [];
+  let aktuell = '';
+
+  for (const block of bloecke) {
+    if (aktuell && aktuell.length + block.length + 2 > FELD_GRENZE) {
+      felder.push(aktuell);
+      aktuell = '';
+    }
+    aktuell += (aktuell ? '\n\n' : '') + block;
   }
-  const rating = slot.rating != null ? ` \`${slot.rating}\`` : '';
-  const pin = slot.locked ? ' 📌' : '';
-  return `${icon} **${weapon}** · ${slot.displayName}${rating}${pin}`;
+  if (aktuell) felder.push(aktuell);
+  return felder.length ? felder : ['—'];
+}
+
+function namensliste(namen, grenze = FELD_GRENZE) {
+  const text = namen.join(' · ');
+  return text.length > grenze ? `${text.slice(0, grenze - 1)}…` : text;
 }
 
 /**
@@ -41,61 +91,69 @@ function slotLine(slot) {
  * @param {object} event
  * @param {object} composition Ergebnis aus buildComposition()
  * @param {Array} maybes  Anmeldungen mit Status "maybe"
- * @param {string} dashboardUrl
  */
-export function buildEventEmbed(event, composition, maybes, dashboardUrl) {
+export function buildEventEmbed(event, composition, maybes) {
   const startsAt = new Date(event.starts_at);
   const lockAt = new Date(startsAt.getTime() - event.lock_minutes * 60_000);
 
-  const isLocked = event.status === 'locked';
-  const isCancelled = event.status === 'cancelled';
-
-  const header = [
-    `**Start:** ${discordTime(startsAt, 'F')} · ${discordTime(startsAt, 'R')}`,
-    isCancelled
-      ? '**Abgesagt.**'
-      : isLocked
-        ? '**Aufstellung steht.**'
-        : `Aufstellung wird ${discordTime(lockAt, 'R')} eingefroren.`,
-    `**Comp:** ${event.comp_name} · ${composition.filled}/${composition.total} besetzt`,
-  ].join('\n');
+  const abgesagt = event.status === 'cancelled';
+  const steht = event.status === 'locked';
 
   const embed = new EmbedBuilder()
     .setTitle(event.title || event.comp_name)
-    .setDescription(header)
-    .setColor(isCancelled ? COLOR_CANCELLED : isLocked ? COLOR_LOCKED : COLOR_OPEN)
-    .setFooter({ text: `Event #${event.id}` });
+    .setColor(abgesagt ? FARBE_ABGESAGT : steht ? FARBE_STEHT : FARBE_OFFEN);
 
-  if (!isCancelled) {
-    const chunks = chunkLines(composition.slots.map(slotLine));
-    chunks.forEach((chunk, i) => {
-      embed.addFields({ name: i === 0 ? 'Aufstellung' : '​', value: chunk });
-    });
-
-    if (composition.bench.length) {
-      const bench = composition.bench
-        .map((p) => (p.bestRating ? `${p.displayName} \`${p.bestRating}\`` : p.displayName))
-        .join(', ');
-      embed.addFields({
-        name: `Bank (${composition.bench.length})`,
-        value: bench.slice(0, FIELD_LIMIT),
-      });
-    }
-
-    if (maybes.length) {
-      embed.addFields({
-        name: `Vielleicht (${maybes.length})`,
-        value: maybes.map((m) => m.display_name).join(', ').slice(0, FIELD_LIMIT),
-      });
-    }
+  if (abgesagt) {
+    embed.setDescription(`~~${discordTime(startsAt, 'f')}~~\n**Abgesagt.**`);
+    embed.setFooter({ text: `Event #${event.id}` });
+    return embed;
   }
 
-  if (!isCancelled) {
+  // Kopf: wann, und was als Naechstes passiert
+  embed.setDescription(
+    [
+      `${discordTime(startsAt, 'F')} · ${discordTime(startsAt, 'R')}`,
+      steht
+        ? '**Die Aufstellung steht.**'
+        : `Wird ${discordTime(lockAt, 'R')} eingefroren.`,
+    ].join('\n'),
+  );
+
+  const gruppen = gruppiere(composition.slots);
+  const felder = inFelder(gruppen.map(gruppeAlsZeilen));
+  felder.forEach((feld, index) => {
+    embed.addFields({ name: index === 0 ? 'Aufstellung' : '​', value: feld });
+  });
+
+  // Bank und Vielleicht nebeneinander - beides sind kurze Namenslisten
+  if (composition.bench.length) {
     embed.addFields({
-      name: '​',
-      value: 'Noch kein Waffenprofil? Tipp `/waffen` in den Chat — sonst wirst du keiner Rolle zugeordnet.',
+      name: `Bank · ${composition.bench.length}`,
+      value: namensliste(
+        composition.bench.map((p) => (p.bestRating ? `${p.displayName} \`${p.bestRating}\`` : p.displayName)),
+      ),
+      inline: true,
     });
   }
+
+  if (maybes.length) {
+    embed.addFields({
+      name: `Vielleicht · ${maybes.length}`,
+      value: namensliste(maybes.map((m) => m.display_name)),
+      inline: true,
+    });
+  }
+
+  embed.setFooter({
+    text: [
+      `Event #${event.id}`,
+      event.comp_name,
+      `${composition.filled}/${composition.total} besetzt`,
+      steht ? null : '/waffen für dein Profil',
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  });
 
   return embed;
 }
@@ -107,7 +165,7 @@ export function buildEventButtons(event, dashboardUrl) {
     return [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setLabel('Im Dashboard ansehen')
+          .setLabel('Im Dashboard')
           .setStyle(ButtonStyle.Link)
           .setURL(`${dashboardUrl}/events/${event.id}`),
       ),
@@ -118,89 +176,92 @@ export function buildEventButtons(event, dashboardUrl) {
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`su:yes:${event.id}`)
-        .setLabel('Anmelden')
-        .setEmoji('✅')
+        .setLabel('Dabei')
         .setStyle(ButtonStyle.Success),
       new ButtonBuilder()
         .setCustomId(`su:maybe:${event.id}`)
         .setLabel('Vielleicht')
-        .setEmoji('❔')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId(`su:out:${event.id}`)
         .setLabel('Abmelden')
-        .setEmoji('✖️')
-        .setStyle(ButtonStyle.Danger),
+        .setStyle(ButtonStyle.Secondary),
     ),
   ];
 
-  const second = new ActionRowBuilder().addComponents(
+  const zweite = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`ev:cancel:${event.id}`)
       .setLabel('Event absagen')
-      .setStyle(ButtonStyle.Secondary),
+      .setStyle(ButtonStyle.Danger),
   );
   if (dashboardUrl) {
-    second.addComponents(
+    zweite.addComponents(
       new ButtonBuilder()
-        .setLabel('Comp bearbeiten')
+        .setLabel('Im Dashboard')
         .setStyle(ButtonStyle.Link)
         .setURL(`${dashboardUrl}/events/${event.id}`),
     );
   }
-  rows.push(second);
+  rows.push(zweite);
 
   return rows;
 }
 
-/** Ping-Nachricht beim Einfrieren: jeder erfaehrt, was er spielt. */
+/**
+ * Ping beim Einfrieren. Auch hier nach Waffe gebuendelt: wer sucht, sucht
+ * nach seiner Waffe, nicht nach seinem Namen in einer Liste von zwanzig.
+ */
 export function buildLockMessage(event, composition, pingRoleId) {
-  const lines = [];
-  if (pingRoleId) lines.push(`<@&${pingRoleId}>`);
-  lines.push(`**${event.title || event.comp_name}** startet gleich — die Aufstellung steht:`);
-  lines.push('');
+  const zeilen = [];
+  if (pingRoleId) zeilen.push(`<@&${pingRoleId}>`);
+  zeilen.push(`**${event.title || event.comp_name}** — Aufstellung steht:`);
+  zeilen.push('');
 
-  for (const slot of composition.slots) {
-    if (!slot.discordId) continue;
-    lines.push(`<@${slot.discordId}> → **${slot.weaponName}**`);
+  for (const gruppe of gruppiere(composition.slots)) {
+    const besetzt = composition.slots.filter(
+      (slot) => slot.discordId && (slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName) === gruppe.name,
+    );
+    if (besetzt.length === 0) continue;
+    zeilen.push(`${gruppe.icon} **${gruppe.name}**`);
+    zeilen.push(besetzt.map((slot) => `<@${slot.discordId}>`).join(' '));
   }
 
-  const missing = composition.slots.filter((s) => !s.discordId);
-  if (missing.length) {
-    const grouped = new Map();
-    for (const slot of missing) {
-      grouped.set(slot.weaponName, (grouped.get(slot.weaponName) ?? 0) + 1);
+  const offen = composition.slots.filter((slot) => !slot.discordId);
+  if (offen.length) {
+    const nachWaffe = new Map();
+    for (const slot of offen) {
+      nachWaffe.set(slot.weaponName, (nachWaffe.get(slot.weaponName) ?? 0) + 1);
     }
-    lines.push('');
-    lines.push(
-      `⚠️ Noch offen: ${[...grouped].map(([weapon, count]) => `${count}× ${weapon}`).join(', ')}`,
+    zeilen.push('');
+    zeilen.push(
+      `⚠️ Offen: ${[...nachWaffe].map(([waffe, anzahl]) => `${anzahl}× ${waffe}`).join(', ')}`,
     );
   }
 
   if (composition.bench.length) {
-    lines.push('');
-    lines.push(`Bank: ${composition.bench.map((p) => `<@${p.discordId}>`).join(' ')}`);
+    zeilen.push('');
+    zeilen.push(`Bank: ${composition.bench.map((p) => `<@${p.discordId}>`).join(' ')}`);
   }
 
-  // Discord erlaubt 2000 Zeichen pro Nachricht
-  const text = lines.join('\n');
+  const text = zeilen.join('\n');
   return text.length > 1990 ? `${text.slice(0, 1980)}\n…` : text;
 }
 
 /** Billiger Hash, um das Embed nur bei echten Aenderungen neu zu schreiben. */
 export function hashComposition(event, composition, maybes) {
-  const parts = [
+  const teile = [
     event.status,
     String(event.starts_at),
     ...composition.slots.map((s) => `${s.slotIndex}:${s.discordId ?? '-'}:${s.rating ?? '-'}`),
     ...composition.bench.map((p) => p.discordId),
     ...maybes.map((m) => m.discord_id),
   ];
-  const input = parts.join('|');
+  const eingabe = teile.join('|');
 
   let hash = 5381;
-  for (let i = 0; i < input.length; i++) {
-    hash = ((hash * 33) ^ input.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < eingabe.length; i++) {
+    hash = ((hash * 33) ^ eingabe.charCodeAt(i)) >>> 0;
   }
   return hash.toString(36);
 }

@@ -127,32 +127,67 @@ export function formatAmount(betrag) {
 //  Anzeige
 // ---------------------------------------------------------------------
 
-const MEDAILLEN = ['🥇', '🥈', '🥉'];
+const FARBE_GOLD = 0xd9a441;
+const FARBE_PLUS = 0x57f287;
+const FARBE_MINUS = 0xed4245;
 
+/**
+ * Rangliste als Codeblock. Anders als in Fliesstext stehen die Betraege
+ * dadurch wirklich untereinander - bei einer Tabelle aus Zahlen ist genau
+ * das der Punkt. Die ersten drei bekommen ihre Medaille davor.
+ */
 export function renderLeaderboard({ rows, seite, seiten, gesamt }, guildName) {
   const embed = new EmbedBuilder()
-    .setTitle('💰 Rangliste')
-    .setColor(0xd9a441)
+    .setTitle('Rangliste')
+    .setColor(FARBE_GOLD)
     .setFooter({
-      text: seiten > 1 ? `Seite ${seite + 1} von ${seiten} · ${gesamt} Einträge` : `${gesamt} Einträge`,
+      text: [guildName, seiten > 1 ? `Seite ${seite + 1}/${seiten}` : null, `${gesamt} Einträge`]
+        .filter(Boolean)
+        .join(' · '),
     });
 
-  if (guildName) embed.setAuthor({ name: guildName });
-
   if (rows.length === 0) {
-    embed.setDescription('Noch hat niemand Gold. Vergeben geht mit `/balance geben` oder `!balance add`.');
+    embed.setDescription(
+      'Noch hat niemand Gold.\nVergeben geht mit `/balance geben` oder `!balance add @Name 500`.',
+    );
     return embed;
   }
 
+  // Bewusst keine Medaillen-Emoji im Block: die sind breiter als eine Ziffer,
+  // und schon eine einzige davon schiebt alle folgenden Zeilen aus der Spalte.
+  // In einer Tabelle aus Zahlen ist die Ausrichtung der ganze Zweck.
+  const breite = Math.max(...rows.map((row) => formatAmount(BigInt(row.amount)).length));
+  const platzBreite = String(seite * PRO_SEITE + rows.length).length;
+
   const zeilen = rows.map((row, index) => {
-    const platz = seite * PRO_SEITE + index + 1;
-    const marke = platz <= 3 && seite === 0 ? MEDAILLEN[platz - 1] : `\`${String(platz).padStart(2)}\``;
-    const name = row.display_name ?? `<@${row.discord_id}>`;
-    return `${marke} **${formatAmount(BigInt(row.amount))}** — ${name}`;
+    const platz = String(seite * PRO_SEITE + index + 1).padStart(platzBreite);
+    const betrag = formatAmount(BigInt(row.amount)).padStart(breite);
+    const name = row.display_name ?? row.discord_id;
+    return `${platz}  ${betrag}  ${name}`;
   });
 
-  embed.setDescription(zeilen.join('\n'));
+  embed.setDescription(`\`\`\`\n${zeilen.join('\n')}\n\`\`\``);
   return embed;
+}
+
+/** Bestaetigung einer Buchung. */
+export function renderBooking({ menge, abziehen, zielId, saldo, grund }) {
+  const embed = new EmbedBuilder()
+    .setColor(abziehen ? FARBE_MINUS : FARBE_PLUS)
+    .setDescription(
+      `${abziehen ? '−' : '+'} **${formatAmount(menge)}** Gold ${abziehen ? 'abgezogen von' : 'für'} <@${zielId}>`,
+    )
+    .addFields({ name: 'Neuer Stand', value: `**${formatAmount(saldo)}**`, inline: true });
+
+  if (grund) embed.addFields({ name: 'Grund', value: grund, inline: true });
+  return embed;
+}
+
+/** Kontostand einer Person. */
+export function renderBalance(zielId, saldo, selbst) {
+  return new EmbedBuilder()
+    .setColor(FARBE_GOLD)
+    .setDescription(`${selbst ? 'Du hast' : `<@${zielId}> hat`} **${formatAmount(saldo)}** Gold.`);
 }
 
 export function leaderboardButtons(seite, seiten) {
