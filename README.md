@@ -149,10 +149,42 @@ Wichtig: als **Root Directory** `dashboard` angeben. Alle Werte aus `.env.local`
 als Environment Variables eintragen, `DEV_LOGIN` weglassen. Nach dem ersten
 Deploy die Vercel-Adresse als zweite Redirect-URL im Discord-Portal ergänzen.
 
-**Bot → bot-hosting.net:** Server mit der Node.js-Egg anlegen, den Inhalt von
-`bot/` per SFTP hochladen (ohne `node_modules`), Startbefehl `npm start`. Die
-Werte aus `.env` als Startup-Variablen setzen oder die `.env` mit hochladen.
-`DASHBOARD_URL` auf die Vercel-Adresse zeigen lassen.
+**Bot → bot-hosting.net:** Deployment mit Quelle *GitHub* aus diesem Repo
+anlegen, Runtime Node.js. Zwei Einstellungen entscheiden, ob er startet:
+
+- **Startup → Entry file:** `bot/src/index.js` — nicht die Vorgabe `index.js`,
+  der Einstiegspunkt liegt hier eine Ebene tiefer. Dafür gibt es die
+  `package.json` in der Wurzel: ohne sie fände der Hoster weder Abhängigkeiten
+  noch einen Startbefehl.
+- **Env → Raw .env:** den Inhalt von `bot/.env` einfügen. `DASHBOARD_URL` auf
+  die Vercel-Adresse zeigen lassen.
+
+### Automatisch ausliefern
+
+Der Hoster klont das Repo nur einmal. Im Container liegt danach kein Git — ein
+`git pull` gibt es dort also nicht, und sein *GitHub sync*-Knopf im
+Dateibrowser müsste jedes Mal von Hand gedrückt werden.
+
+Stattdessen erledigt das
+[`.github/workflows/bot-ausliefern.yml`](.github/workflows/bot-ausliefern.yml):
+bei jedem Push auf `main`, der `bot/` berührt, laufen erst die Tests, dann
+schiebt [`push-to-host.mjs`](.github/scripts/push-to-host.mjs) die Dateien über
+die Hoster-API hoch und startet neu. Danach liest es die Konsole mit und bricht
+ab, wenn dort binnen 90 Sekunden kein `Eingeloggt als …` auftaucht — sonst wäre
+jede Auslieferung grün, auch wenn der Bot beim Start sofort wieder stirbt.
+
+Dafür braucht das Repo zwei Secrets unter *Settings → Secrets and variables →
+Actions*:
+
+| Secret | Woher |
+| --- | --- |
+| `BOTHOST_API_KEY` | [bot-hosting.net/developer](https://bot-hosting.net/developer) → *Manage API keys*, Rechte `files:write` und `deployments:power` |
+| `BOTHOST_DEPLOYMENT` | die ID aus der Adresszeile des Deployments |
+
+Geschickt wird nur, was git kennt — Lokales und vor allem die `.env` bleiben
+draußen. Die Zugangsdaten stehen in den Umgebungsvariablen des Hosters und
+werden nie überschrieben. Gelöschte Dateien bleiben als Leichen auf dem Server
+liegen; das Skript schreibt nur.
 
 > Im Free-Tier von bot-hosting.net wird der Server neu aufgesetzt, wenn die
 > Coins ausgehen. Deshalb liegen alle Daten in Supabase und keine Timer im
