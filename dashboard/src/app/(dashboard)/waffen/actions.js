@@ -10,7 +10,7 @@ import { getAccessibleGuilds } from '@/lib/guilds';
 async function requireAnyGuild() {
   const { session, guilds } = await getAccessibleGuilds();
   if (!session) throw new Error('Nicht angemeldet.');
-  if (guilds.length === 0) throw new Error('Dafuer fehlen dir die Rechte.');
+  if (guilds.length === 0) throw new Error('Dafür fehlen dir die Rechte.');
   return session;
 }
 

@@ -83,7 +83,7 @@ function parseUhrzeit(text, original) {
   const stunde = Number(treffer[1]);
   const minute = treffer[2] ? Number(treffer[2]) : 0;
   if (stunde > 23 || minute > 59) {
-    throw new Error(`\`${original}\` ist keine gueltige Uhrzeit.`);
+    throw new Error(`\`${original}\` ist keine gültige Uhrzeit.`);
   }
   return { stunde, minute };
 }
@@ -143,7 +143,7 @@ export function parseStartTime(input, timeZone = TIMEZONE) {
 
     const jahr = y ? Number(y) : todayInZone(timeZone).year;
     const datum = zonedToUtc(jahr, Number(m), Number(d), uhr.stunde, uhr.minute, timeZone);
-    if (Number.isNaN(datum.getTime())) throw new Error(`\`${input}\` ergibt kein gueltiges Datum.`);
+    if (Number.isNaN(datum.getTime())) throw new Error(`\`${input}\` ergibt kein gültiges Datum.`);
     // Ohne Jahresangabe und schon vorbei -> naechstes Jahr gemeint
     if (!y && datum.getTime() < Date.now()) {
       return zonedToUtc(jahr + 1, Number(m), Number(d), uhr.stunde, uhr.minute, timeZone);
@@ -161,7 +161,7 @@ export function parseStartTime(input, timeZone = TIMEZONE) {
   const uhr = parseUhrzeit(raw, input);
   if (uhr) return heuteOderMorgen(uhr.stunde, uhr.minute, timeZone);
 
-  throw new Error(`Mit \`${input}\` kann ich nichts anfangen. Moeglich sind: ${ZEIT_BEISPIELE}`);
+  throw new Error(`Mit \`${input}\` kann ich nichts anfangen. Möglich sind: ${ZEIT_BEISPIELE}`);
 }
 
 /** Discord-Timestamp - jeder Member sieht seine lokale Zeit. */

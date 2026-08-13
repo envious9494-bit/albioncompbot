@@ -122,8 +122,8 @@ describe('parseStartTime - Unfug', () => {
   });
 
   it('weist unmoegliche Uhrzeiten ab', () => {
-    assert.throws(() => parseStartTime('25:00', ZONE), /keine gueltige Uhrzeit/);
-    assert.throws(() => parseStartTime('20:99', ZONE), /keine gueltige Uhrzeit/);
+    assert.throws(() => parseStartTime('25:00', ZONE), /keine gültige Uhrzeit/);
+    assert.throws(() => parseStartTime('20:99', ZONE), /keine gültige Uhrzeit/);
   });
 
   it('schlaegt bei einer zu grossen blossen Zahl die Minutenform vor', () => {

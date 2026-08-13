@@ -8,8 +8,8 @@ Leute, die sie am besten spielen.
 - **Der Leader** baut im Dashboard die Comps (Waffe × Anzahl × Priorität) und
   sieht dort live, wer wo landen würde.
 - **Der Bot** postet den Timer, sammelt Anmeldungen, rechnet die Aufstellung bei
-  jeder Änderung neu und friert sie 10 Minuten vor Start ein — mit Ping, wer was
-  spielt.
+  jeder Änderung neu und friert sie kurz vor Start ein — mit Ping, wer was
+  spielt. Wie kurz, stellt der Leader im Dashboard ein (Standard 10 Minuten).
 
 ## Aufbau
 
@@ -56,7 +56,7 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
    das legt alle Tabellen an. Die Waffen kommen später per Knopfdruck im
    Dashboard dazu.
    Bei einer Datenbank, die schon vor diesen Nachträgen angelegt wurde,
-   zusätzlich `db/002_bot_status.sql` bis `db/005_multi_guild.sql` der Reihe
+   zusätzlich `db/002_bot_status.sql` bis `db/008_default_lock.sql` der Reihe
    nach einspielen.
 3. Beim Ausführen fragt Supabase nach **Row Level Security**. Antwort:
    *Run and enable RLS*. Warum das wichtig ist, steht unten.
@@ -236,6 +236,30 @@ ein, bevor sich jemand anmelden konnte.
 Wer Timer erstellen darf, steht in `OFFICER_IDS`. Ist die Liste leer, darf jeder
 mit dem Recht *Server verwalten*.
 
+### Die Skala im Waffenprofil
+
+`/waffen` fragt Kategorie für Kategorie ab: erst ankreuzen, was du spielen
+kannst, dann pro Waffe den Skill. Die Zahlen sind nicht Geschmackssache —
+ohne feste Bedeutung hält sich der eine für eine 7 und der nächste mit
+demselben Können für eine 4, und der Bot rechnet mit beidem, als wäre es
+dasselbe Maß. Der Schnitt liegt bei 7: ab da steht Fullspec.
+
+| | |
+| --- | --- |
+| `10` | Fullspec · beherrsche ich blind |
+| `9` | Fullspec · sehr sicher |
+| `8` | Fullspec · sitzt |
+| `7` | Fullspec · noch am Üben |
+| `6` | Specs angefangen, will ich lernen |
+| `5` | Grundlagen da, brauche Übung |
+| `4` | schon gespielt, aber selten |
+| `3` | kaum Erfahrung |
+| `2` | nur mal ausprobiert |
+| `1` | zur Not, wenn sonst niemand da ist |
+
+`/waffe` ist die Abkürzung für eine einzelne Waffe. Bei 139 Waffen ist die
+Autovervollständigung aber unhandlich — zum Ausfüllen ist `/waffen` gedacht.
+
 ## Dashboard
 
 | Seite     | Was                                                                 |
@@ -252,6 +276,15 @@ auf welchen Servern er sitzt, ob `DISCORD_GUILD_ID` und `OFFICER_IDS` gesetzt
 sind, und liefert die IDs zum Kopieren. Der Bot meldet sich dafür alle fünf
 Sekunden in der Tabelle `bot_status`; bleibt das Lebenszeichen länger als eine
 Minute aus, gilt er als aus.
+
+### Sperrfrist
+
+Unter *Events* steht ganz oben die **Standard-Sperrfrist** dieses Servers: so
+lange vor Start friert die Aufstellung ein und alle werden gepingt. Wer immer
+mit 15 Minuten fährt, stellt sie einmal ein statt sie bei jedem `/timer`
+mitzutippen. Das Feld `lock` bei `/timer` schlägt den Wert für einen einzelnen
+Timer weiter; laufende Events behalten ihre Frist, die wird beim Anlegen
+eingefroren.
 
 ### Mehrere Discord-Server
 

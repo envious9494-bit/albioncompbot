@@ -49,3 +49,23 @@ export async function clearAllLocks(formData) {
   await sql`update event set render_hash = null where id = ${eventId}`;
   revalidatePath(`/events/${eventId}`);
 }
+
+/**
+ * Standard-Sperrfrist des Servers setzen.
+ *
+ * Gilt nur fuer kuenftige Timer: laufende Events haben ihre lock_minutes
+ * beim Anlegen eingefroren, genau wie ihre Slots. Wer eine laufende
+ * Anmeldung verlaengern will, muss den Timer neu setzen.
+ */
+export async function setDefaultLock(formData) {
+  const guildId = String(formData.get('guild_id') || '');
+  await requireGuildAction(guildId);
+
+  const minuten = Number(formData.get('minutes'));
+  if (!Number.isInteger(minuten) || minuten < 0 || minuten > 180) {
+    throw new Error('Die Sperrfrist muss zwischen 0 und 180 Minuten liegen.');
+  }
+
+  await sql`update guild set default_lock_minutes = ${minuten} where id = ${guildId}`;
+  revalidatePath('/events');
+}

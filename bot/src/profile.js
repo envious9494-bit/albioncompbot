@@ -25,6 +25,39 @@ const MAX_OPTIONS = 25;
 const DEFAULT_RATING = 5;
 
 /**
+ * Was die Zahlen bedeuten.
+ *
+ * Ohne das ist "7" eine Meinung: der eine haelt sich fuer eine 7, der
+ * naechste mit demselben Koennen fuer eine 4. Der Bot rechnet aber damit,
+ * als waere es dasselbe Mass. Der Schnitt bei 7 ist bewusst gesetzt - ab da
+ * steht Fullspec, darunter geht es ums Lernen.
+ */
+export const SKILL_STUFEN = {
+  10: 'Fullspec · beherrsche ich blind',
+  9: 'Fullspec · sehr sicher',
+  8: 'Fullspec · sitzt',
+  7: 'Fullspec · noch am Üben',
+  6: 'Specs angefangen, will ich lernen',
+  5: 'Grundlagen da, brauche Übung',
+  4: 'schon gespielt, aber selten',
+  3: 'kaum Erfahrung',
+  2: 'nur mal ausprobiert',
+  1: 'zur Not, wenn sonst niemand da ist',
+};
+
+/** Die Staffelung als Liste, aktuelle Stufe hervorgehoben. */
+function skalaAlsText(aktuell) {
+  return Object.keys(SKILL_STUFEN)
+    .map(Number)
+    .sort((a, b) => b - a)
+    .map((stufe) => {
+      const zeile = `\`${String(stufe).padStart(2)}\` ${SKILL_STUFEN[stufe]}`;
+      return stufe === aktuell ? `**${zeile}** ←` : `-# ${zeile}`;
+    })
+    .join('\n');
+}
+
+/**
  * Teilt die Waffenliste in Gruppen von hoechstens 25 auf, Kategorie fuer
  * Kategorie. Grosse Kategorien werden zu "DPS (1/2)", "DPS (2/2)".
  * Die Aufteilung ergibt sich allein aus der Reihenfolge in der Datenbank,
@@ -117,10 +150,15 @@ function rateRow(group, groupIndex, ratings) {
     .setCustomId(`wq:rate:${groupIndex}`)
     .setPlaceholder('Skill anpassen …')
     .addOptions(
-      chosen.map((weapon) => ({
-        label: `${weapon.name} — ${ratings.get(weapon.id)}`,
-        value: String(weapon.id),
-      })),
+      chosen.map((weapon) => {
+        const stufe = ratings.get(weapon.id);
+        return {
+          label: `${weapon.name} — ${stufe}`,
+          // Discord laesst 100 Zeichen zu; die laengste Stufe bleibt darunter.
+          description: SKILL_STUFEN[stufe],
+          value: String(weapon.id),
+        };
+      }),
     );
   return new ActionRowBuilder().addComponents(menu);
 }
@@ -146,7 +184,10 @@ export async function renderQuestionnaire(guildId, discordId, groupIndex = null)
     );
   } else {
     lines.push('');
-    lines.push('Skala: **1** = kann ich zur Not, **10** = spiele ich blind.');
+    lines.push(
+      `Skala **1–10**: ab **7** heißt es Fullspec, darunter geht es ums Lernen. ` +
+        `Die genaue Bedeutung steht bei jeder Waffe dran.`,
+    );
   }
 
   return { content: lines.join('\n'), components };
@@ -172,7 +213,11 @@ export async function renderRatePrompt(guildId, discordId, weaponId, groupIndex)
     );
 
   return {
-    content: `**${weapon.name}** — wie gut spielst du das?\nAktuell: \`${current ?? '–'}\``,
+    content: [
+      `**${weapon.name}** — wie gut spielst du das?`,
+      '',
+      skalaAlsText(current),
+    ].join('\n'),
     components: [
       makeRow(1, 5),
       makeRow(6, 10),

@@ -14,6 +14,7 @@ import {
   cancelEvent,
   createEvent,
   getComps,
+  getDefaultLockMinutes,
   hasGuildAccess,
   getOpenEvents,
   getPlayerWeapons,
@@ -110,12 +111,12 @@ const commands = [
         .setRequired(true),
     )
     .addStringOption((option) =>
-      option.setName('titel').setDescription('Ueberschrift, sonst der Comp-Name'),
+      option.setName('titel').setDescription('Überschrift, sonst der Comp-Name'),
     )
     .addIntegerOption((option) =>
       option
         .setName('lock')
-        .setDescription('Minuten vor Start, ab denen die Aufstellung steht (Standard 10)')
+        .setDescription('Minuten vor Start, ab denen die Aufstellung steht (sonst der Server-Standard)')
         .setMinValue(0)
         .setMaxValue(180),
     )
@@ -147,7 +148,7 @@ const commands = [
         .addStringOption((option) =>
           option.setName('menge').setDescription('z.B. 500, 1.5k oder 2m').setRequired(true),
         )
-        .addStringOption((option) => option.setName('grund').setDescription('Wofuer')),
+        .addStringOption((option) => option.setName('grund').setDescription('Wofür')),
     )
     .addSubcommand((sub) =>
       sub
@@ -200,7 +201,7 @@ async function registerCommands() {
 
   if (targets.length === 0) {
     console.log(
-      'Der Bot ist auf keinem Server. Lade ihn im Dashboard unter "Server waehlen" ein, ' +
+      'Der Bot ist auf keinem Server. Lade ihn im Dashboard unter "Server wählen" ein, ' +
         'die Befehle kommen dann von selbst.',
     );
     return;
@@ -312,7 +313,7 @@ async function lockAndAnnounce(eventId) {
     });
     console.log(`Event #${eventId} eingefroren: ${composition.filled}/${composition.total} besetzt.`);
   } catch (error) {
-    console.error(`Ping fuer Event #${eventId} fehlgeschlagen:`, error.message);
+    console.error(`Ping für Event #${eventId} fehlgeschlagen:`, error.message);
   }
 }
 
@@ -568,7 +569,7 @@ async function handleCommand(interaction) {
 
   if (!(await isOfficer(interaction))) {
     await interaction.reply({
-      content: 'Nur Offiziere koennen Timer erstellen.',
+      content: 'Nur Offiziere können Timer erstellen.',
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -578,14 +579,18 @@ async function handleCommand(interaction) {
   const compId = Number(compValue);
   if (!Number.isInteger(compId)) {
     await interaction.reply({
-      content: 'Bitte eine Comp aus der Vorschlagsliste auswaehlen.',
+      content: 'Bitte eine Comp aus der Vorschlagsliste auswählen.',
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
 
   const startsAt = parseStartTime(interaction.options.getString('zeit', true));
-  const lockMinutes = interaction.options.getInteger('lock') ?? 10;
+  // Ohne Angabe der Standard dieses Servers - im Dashboard einstellbar,
+  // damit eine Gilde, die immer mit 15 Minuten faehrt, sie nicht jedes Mal
+  // mittippen muss.
+  const lockMinutes =
+    interaction.options.getInteger('lock') ?? (await getDefaultLockMinutes(interaction.guildId));
 
   if (startsAt.getTime() <= Date.now()) {
     await interaction.reply({
@@ -727,9 +732,9 @@ async function handleButton(interaction) {
 
     let hint;
     if (mine) {
-      hint = `Angemeldet. Stand jetzt spielst du **${mine.weaponName}**. Das kann sich bis zum Einfrieren noch aendern.`;
+      hint = `Angemeldet. Stand jetzt spielst du **${mine.weaponName}**. Das kann sich bis zum Einfrieren noch ändern.`;
     } else if (hasProfile) {
-      hint = 'Angemeldet - aktuell reicht es nur fuer die Bank.';
+      hint = 'Angemeldet - aktuell reicht es nur für die Bank.';
     } else {
       hint =
         'Angemeldet. Du hast aber noch kein Waffenprofil — tipp `/waffen`, sonst kannst du keiner Rolle zugeordnet werden.';
@@ -888,11 +893,11 @@ async function warnBeiZweitemBot() {
 
     console.warn(
       `Achtung: vor ${alter.toFixed(0)}s hat schon ein Bot mit diesem Token ein Lebenszeichen geschrieben.\n` +
-        '  Laeuft der noch, schreiben euch beide die Timer-Nachrichten um und streiten sich um jede Anmeldung.\n' +
+        '  Läuft der noch, schreiben euch beide die Timer-Nachrichten um und streiten sich um jede Anmeldung.\n' +
         '  Bei einem Neustart ist das normal und verschwindet von selbst.',
     );
   } catch (error) {
-    console.error('Konnte nicht pruefen, ob ein zweiter Bot laeuft:', error.message);
+    console.error('Konnte nicht prüfen, ob ein zweiter Bot läuft:', error.message);
   }
 }
 

@@ -35,6 +35,21 @@ export async function upsertGuild(guildId, name, icon = null) {
   `;
 }
 
+/**
+ * Standard-Sperrfrist dieses Servers in Minuten, einstellbar im Dashboard.
+ * Faellt auf 10 zurueck, solange db/008_default_lock.sql nicht eingespielt
+ * ist - der Bot soll deswegen keine Timer verweigern.
+ */
+export async function getDefaultLockMinutes(guildId) {
+  try {
+    const [row] = await sql`select default_lock_minutes from guild where id = ${guildId}`;
+    return row?.default_lock_minutes ?? 10;
+  } catch (error) {
+    if (error.code === '42703') return 10; // Spalte existiert nicht
+    throw error;
+  }
+}
+
 /** Steht die Person auf der Zugangsliste dieses Servers? */
 export async function hasGuildAccess(guildId, discordId) {
   const [row] = await sql`
@@ -190,7 +205,7 @@ export async function createEvent({ compId, compName, title, guildId, channelId,
   return sql.begin(async (tx) => {
     // Sicherstellen, dass die Comp wirklich zu diesem Server gehoert
     const [comp] = await tx`select id from comp where id = ${compId} and guild_id = ${guildId}`;
-    if (!comp) throw new Error('Diese Comp gehoert nicht zu diesem Server.');
+    if (!comp) throw new Error('Diese Comp gehört nicht zu diesem Server.');
 
     const [event] = await tx`
       insert into event (comp_id, comp_name, title, guild_id, channel_id, starts_at, lock_minutes, created_by)

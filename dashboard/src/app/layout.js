@@ -18,7 +18,7 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata = {
   title: 'Albion Comp',
-  description: 'Aufstellungen fuer die Gilde',
+  description: 'Aufstellungen für die Gilde',
 };
 
 /**
