@@ -363,6 +363,12 @@ mehr ausgewertet.
 Freigeschaltete sehen alles ihres Servers: Comps, Events und die Waffenprofile
 aller Member. Andere Server bleiben unsichtbar.
 
+Unter *Spieler* lässt sich der **Skill fremder Waffen nachbessern** — für den
+Fall, dass sich jemand falsch einschätzt. `—` nimmt die Waffe aus dem Profil.
+Neue Waffen kann dort niemand *hinzufügen*: eintragen tut jeder selbst mit
+`/waffen`. Sonst könnte man jemandem eine Waffe unterschieben, die er nie
+angegeben hat, und ihn damit auf einen Slot stellen, den er nicht spielen kann.
+
 In der Event-Ansicht kannst du pro Slot einen Spieler festnageln. Der Bot
 übernimmt das innerhalb von fünf Sekunden und rechnet den Rest drumherum neu.
 

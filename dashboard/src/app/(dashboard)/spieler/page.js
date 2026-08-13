@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { requireGuild } from '@/lib/guilds';
+import SkillPicker from './SkillPicker';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export default async function PlayersPage() {
       order by lower(p.display_name)
     `,
     sql`
-      select pw.discord_id, pw.rating, w.name, w.category, w.icon
+      select pw.discord_id, pw.weapon_id, pw.rating, w.name, w.category, w.icon
       from player_weapon pw
       join weapon w on w.id = pw.weapon_id
       where pw.guild_id = ${guild.id}
@@ -38,8 +39,9 @@ export default async function PlayersPage() {
     <>
       <h1>Spieler</h1>
       <p className="subtitle">
-        Was die Member im Discord mit <code>/waffen</code> eingetragen haben. Nur lesen – ändern
-        kann das jeder nur für sich selbst.
+        Was die Member im Discord mit <code>/waffen</code> eingetragen haben. Den Skill kannst du
+        hier nachbessern, wenn sich jemand falsch einschätzt — <code>—</code> nimmt die Waffe aus
+        dem Profil. Neue Waffen trägt jeder selbst mit <code>/waffen</code> ein.
       </p>
 
       {players.length === 0 && (
@@ -65,11 +67,15 @@ export default async function PlayersPage() {
             <span className="badge">{player.weapons} Waffen</span>
           </div>
           <div className="small">
-            {(byPlayer.get(player.discord_id) ?? []).map((entry, index) => (
-              <span key={`${entry.name}-${index}`} style={{ marginRight: 12 }}>
-                {entry.icon || '•'} {entry.name}{' '}
-                <span className="muted">{entry.rating}</span>
-              </span>
+            {(byPlayer.get(player.discord_id) ?? []).map((entry) => (
+              <SkillPicker
+                key={entry.weapon_id}
+                guildId={guild.id}
+                discordId={player.discord_id}
+                weaponId={entry.weapon_id}
+                weaponName={`${entry.icon || '•'} ${entry.name}`}
+                rating={entry.rating}
+              />
             ))}
           </div>
         </div>
