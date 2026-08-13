@@ -41,8 +41,17 @@ export default function SkillPicker({ guildId, discordId, weaponId, weaponName, 
 
     starte(async () => {
       try {
-        await setPlayerRating(guildId, discordId, weaponId, neu);
-        if (neu === 0) setWeg(true);
+        // Den Wert uebernehmen, den die Datenbank zurueckmeldet - nicht den,
+        // den wir geschickt haben. Sonst zeigt das Feld eine 8, waehrend im
+        // Profil weiter eine 1 steht, und im Discord taucht die 1 auf.
+        const antwort = await setPlayerRating(guildId, discordId, weaponId, neu);
+        if (!antwort.ok) {
+          setWert(vorher);
+          setFehler(antwort.fehler);
+          return;
+        }
+        if (antwort.rating === 0) setWeg(true);
+        else setWert(antwort.rating);
       } catch (error) {
         // Zuruecksetzen statt einen Wert stehenzulassen, den die Datenbank
         // gar nicht hat - sonst glaubt der Leader, er haette gespeichert.
@@ -79,6 +88,11 @@ export default function SkillPicker({ guildId, discordId, weaponId, weaponName, 
           ))}
         <option value={0}>—</option>
       </select>
+      {fehler && (
+        <span className="small" style={{ color: 'hsl(var(--state-critical))' }}>
+          {fehler}
+        </span>
+      )}
     </span>
   );
 }
