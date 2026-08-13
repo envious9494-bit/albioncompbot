@@ -27,6 +27,7 @@ import {
   setRenderHash,
   setSignup,
   sql,
+  secondsSinceLastHeartbeat,
   touchBotStatus,
   upsertGuild,
   upsertPlayer,
@@ -869,8 +870,35 @@ async function syncGuilds() {
   }
 }
 
+/**
+ * Warnt, wenn anderswo noch ein Bot mit demselben Token laeuft.
+ *
+ * Zwei Instanzen sind kein theoretisches Problem: sie schreiben dieselbe
+ * Timer-Nachricht abwechselnd in ihrem eigenen Stand um, und bei jeder
+ * Anmeldung gewinnt eine, die andere bekommt "Interaktion abgelaufen".
+ * Von aussen sieht das aus wie ein kaputter Bot.
+ *
+ * Nur eine Warnung, kein Abbruch: beim Neustart auf dem Hoster ist das
+ * Lebenszeichen der eben beendeten Instanz zwangslaeufig noch frisch.
+ */
+async function warnBeiZweitemBot() {
+  try {
+    const alter = await secondsSinceLastHeartbeat();
+    if (alter == null || alter > 15) return;
+
+    console.warn(
+      `Achtung: vor ${alter.toFixed(0)}s hat schon ein Bot mit diesem Token ein Lebenszeichen geschrieben.\n` +
+        '  Laeuft der noch, schreiben euch beide die Timer-Nachrichten um und streiten sich um jede Anmeldung.\n' +
+        '  Bei einem Neustart ist das normal und verschwindet von selbst.',
+    );
+  } catch (error) {
+    console.error('Konnte nicht pruefen, ob ein zweiter Bot laeuft:', error.message);
+  }
+}
+
 client.once(Events.ClientReady, async () => {
   console.log(`Eingeloggt als ${client.user.tag} · Zeitzone ${TIMEZONE}`);
+  await warnBeiZweitemBot();
   await syncGuilds();
   await registerCommands();
 

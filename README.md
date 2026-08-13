@@ -144,6 +144,13 @@ cd bot && npm install && cp .env.example .env && npm start
 Beim Start registriert der Bot seine Slash-Commands auf deinem Server — das
 dauert ein paar Sekunden, dann sind sie im Discord da.
 
+> **Immer nur einen Bot laufen lassen.** Zwei Instanzen mit demselben Token
+> schreiben dieselbe Timer-Nachricht abwechselnd in ihrem eigenen Stand um und
+> streiten sich um jede Anmeldung — von außen sieht das aus, als würde der Bot
+> zwischen zwei Versionen hin- und herspringen. Der Bot warnt beim Start, wenn
+> das letzte Lebenszeichen jünger als 15 Sekunden ist. Läuft er schon auf
+> bot-hosting.net, ihn lokal also erst starten, wenn er dort gestoppt ist.
+
 ### 4. Online stellen
 
 **Dashboard → Vercel:** Repo zu GitHub pushen, auf

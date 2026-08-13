@@ -336,6 +336,27 @@ export async function setMessageId(eventId, messageId) {
  * fehlt (db/002_bot_status.sql nicht eingespielt) - der Bot soll deswegen
  * nicht stehenbleiben.
  */
+/**
+ * Wie viele Sekunden ist das letzte Lebenszeichen her? null, wenn es noch
+ * keines gibt oder die Tabelle fehlt.
+ *
+ * Gedacht fuer den Start: ist das Lebenszeichen frisch, laeuft anderswo noch
+ * ein Bot mit demselben Token. Beide schreiben dann dieselben Nachrichten
+ * abwechselnd um, und beide streiten sich um jede Anmeldung.
+ */
+export async function secondsSinceLastHeartbeat() {
+  try {
+    const [row] = await sql`
+      select extract(epoch from (now() - last_seen)) as alter_sekunden
+      from bot_status where id = 1
+    `;
+    return row ? Number(row.alter_sekunden) : null;
+  } catch (error) {
+    if (error.code === '42P01') return null; // Tabelle existiert nicht
+    throw error;
+  }
+}
+
 export async function touchBotStatus(botTag, guildIds) {
   try {
     await sql`
