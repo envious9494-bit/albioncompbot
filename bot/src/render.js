@@ -87,7 +87,10 @@ function slotZeile(slot) {
 
   if (!slot.discordId) return `${kopf} — *frei*`;
 
-  const person = slot.displayName ?? slot.discordId;
+  // Als Erwaehnung statt als Name: Discord hebt sie im Embed hervor,
+  // benachrichtigt aber nicht - eine Erwaehnung im Embed pingt nie. Genau
+  // deshalb steht der echte Ping im Nachrichtentext daneben.
+  const person = slot.discordId ? `<@${slot.discordId}>` : slot.displayName;
   const rating = slot.rating != null ? ` \`${slot.rating}\`` : '';
   return `${kopf} — ${person}${rating}${slot.locked ? ' 📌' : ''}`;
 }
@@ -242,11 +245,28 @@ export function buildEventEmbed(event, composition, maybes) {
     });
   }
 
+  // Bild der Comp. setImage haengt es gross unter die Aufstellung - das ist
+  // die einzige Stelle, an der Discord ein Bild fest an ein Embed bindet.
+  if (event.image_url) embed.setImage(event.image_url);
+
   embed.setFooter({
     text: [`Event #${event.id}`, event.comp_name, `${composition.filled}/${composition.total} besetzt`].join(' · '),
   });
 
   return embed;
+}
+
+/**
+ * Was ausserhalb des Embeds stehen muss, damit es wirklich pingt.
+ *
+ * Erwaehnungen in einem Embed werden hervorgehoben, loesen aber keine
+ * Benachrichtigung aus - das ist eine Eigenheit von Discord, kein Fehler.
+ * Wer @here erreichen will, muss es in den Nachrichtentext schreiben.
+ */
+export function pingText(event) {
+  if (event.ping === 'here') return '@here';
+  if (event.ping === 'everyone') return '@everyone';
+  return '';
 }
 
 /** Buttons unter dem Embed. Nach dem Einfrieren gibt es nichts mehr zu klicken. */

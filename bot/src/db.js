@@ -204,12 +204,16 @@ export async function getComps(guildId) {
 export async function createEvent({ compId, compName, title, guildId, channelId, startsAt, lockMinutes, createdBy }) {
   return sql.begin(async (tx) => {
     // Sicherstellen, dass die Comp wirklich zu diesem Server gehoert
-    const [comp] = await tx`select id from comp where id = ${compId} and guild_id = ${guildId}`;
+    const [comp] = await tx`
+      select id, image_url, ping from comp where id = ${compId} and guild_id = ${guildId}
+    `;
     if (!comp) throw new Error('Diese Comp gehört nicht zu diesem Server.');
 
     const [event] = await tx`
-      insert into event (comp_id, comp_name, title, guild_id, channel_id, starts_at, lock_minutes, created_by)
-      values (${compId}, ${compName}, ${title}, ${guildId}, ${channelId}, ${startsAt}, ${lockMinutes}, ${createdBy})
+      insert into event (comp_id, comp_name, title, guild_id, channel_id, starts_at, lock_minutes, created_by,
+                         image_url, ping)
+      values (${compId}, ${compName}, ${title}, ${guildId}, ${channelId}, ${startsAt}, ${lockMinutes}, ${createdBy},
+              ${comp.image_url}, ${comp.ping ?? 'none'})
       returning *
     `;
 

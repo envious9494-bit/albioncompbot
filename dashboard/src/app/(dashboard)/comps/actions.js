@@ -106,3 +106,35 @@ export async function saveCompSlots(compId, slots, notes) {
   revalidatePath(`/comps/${compId}`);
   return { slots: clean.reduce((sum, slot) => sum + slot.count, 0) };
 }
+
+/**
+ * Bild und Ping einer Comp.
+ *
+ * Der Ping ist bewusst eine Auswahl aus drei Werten und kein freies Feld:
+ * ein Textfeld wuerde frueher oder spaeter eine fremde Rollen-Erwaehnung
+ * enthalten, und die schickt der Bot dann ungeprueft raus.
+ */
+export async function setCompMeta(formData) {
+  const compId = Number(formData.get('comp_id'));
+  await compDesServers(compId);
+
+  const bild = String(formData.get('image_url') || '').trim();
+  const ping = String(formData.get('ping') || 'none');
+
+  if (!['none', 'here', 'everyone'].includes(ping)) {
+    throw new Error('Unbekannte Ping-Einstellung.');
+  }
+
+  // Nur http(s). Ein "javascript:"-Link im Embed waere zwar in Discord
+  // harmlos, aber das Dashboard zeigt ihn auch an.
+  if (bild && !/^https?:\/\/\S+$/i.test(bild)) {
+    throw new Error('Der Bild-Link muss mit http:// oder https:// anfangen.');
+  }
+
+  await sql`
+    update comp set image_url = ${bild || null}, ping = ${ping}
+    where id = ${compId}
+  `;
+
+  revalidatePath(`/comps/${compId}`);
+}

@@ -45,7 +45,13 @@ import {
 } from './balance.js';
 import { buildComposition } from './matching.js';
 import { handleQuestionnaire, renderQuestionnaire } from './profile.js';
-import { buildEventButtons, buildEventEmbed, buildLockMessage, hashComposition } from './render.js';
+import {
+  buildEventButtons,
+  buildEventEmbed,
+  buildLockMessage,
+  hashComposition,
+  pingText,
+} from './render.js';
 import { discordTime, parseStartTime, TIMEZONE } from './time.js';
 
 const TOKEN = requireEnv('DISCORD_TOKEN');
@@ -289,8 +295,12 @@ async function updateMessage(event, composition, maybes) {
     const channel = await client.channels.fetch(event.channel_id);
     const message = await channel.messages.fetch(event.message_id);
     await message.edit({
+      // Muss mit: ohne content wirft Discord den Ping beim ersten
+      // Neuzeichnen aus der Nachricht, und das ist fuenf Sekunden spaeter.
+      content: pingText(event) || undefined,
       embeds: [buildEventEmbed(event, composition, maybes)],
       components: buildEventButtons(event, DASHBOARD_URL),
+      allowedMentions: { parse: [] },
     });
   } catch (error) {
     // Nachricht geloescht oder Kanal weg - Event stilllegen statt endlos weiterprobieren
@@ -613,9 +623,16 @@ async function handleCommand(interaction) {
   }));
   composition.slots = emptySlots;
 
+  // Der Ping gehoert in den Nachrichtentext, nicht ins Embed: Erwaehnungen
+  // in einem Embed werden hervorgehoben, benachrichtigen aber niemanden.
+  const ping = pingText(event);
   const message = await interaction.channel.send({
+    content: ping || undefined,
     embeds: [buildEventEmbed(event, composition, [])],
     components: buildEventButtons(event, DASHBOARD_URL),
+    // Nur was die Comp verlangt. Die Erwaehnungen im Embed pingen ohnehin
+    // nicht - ohne diese Schranke koennte ein Waffenname mit @ es aber.
+    allowedMentions: { parse: ping ? ['everyone'] : [] },
   });
 
   await setMessageId(event.id, message.id);

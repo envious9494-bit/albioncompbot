@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { buildEventEmbed, hashComposition } from '../src/render.js';
+import { buildEventEmbed, hashComposition, pingText } from '../src/render.js';
 
 /** Ein Event, das gleich losgeht und noch offen ist. */
 function event(extra = {}) {
@@ -105,7 +105,7 @@ describe('Aufstellung: ein Platz, eine Zeile', () => {
     const zeilen = felder.flatMap((f) => f.value.split('\n'));
     assert.equal(zeilen.length, 3);
     assert.doesNotMatch(felder[0].value, /×3/);
-    assert.match(zeilen[0], /Spieler0/);
+    assert.match(zeilen[0], /<@0>/, 'besetzte Plaetze nennen die Person als Erwaehnung');
     assert.match(zeilen[1], /frei/);
     assert.match(zeilen[2], /frei/);
   });
@@ -183,7 +183,7 @@ describe('Aufstellung: ein Platz, eine Zeile', () => {
   it('behaelt die Reihenfolge der Comp', () => {
     const felder = aufstellungsfelder(buildEventEmbed(event(), komposition(21, 21), []));
     const zeilen = felder.flatMap((f) => f.value.split('\n'));
-    zeilen.forEach((zeile, i) => assert.match(zeile, new RegExp(`Spieler${i}\\b`)));
+    zeilen.forEach((zeile, i) => assert.match(zeile, new RegExp(`<@${i}>`)));
   });
 });
 
@@ -291,11 +291,48 @@ describe('Plätze mit mehreren zugelassenen Waffen', () => {
     const wert = felder(buildEventEmbed(event(), k, []));
     assert.match(wert, /Realmbreaker/);
     assert.doesNotMatch(wert, /Axt \/ /, 'nicht mehr beide, wenn besetzt');
-    assert.match(wert, /Kaltblut/);
+    assert.match(wert, /<@1>/);
   });
 
   it('laesst einen Platz ohne Alternativen unveraendert', () => {
     const k = { slots: [slot(0)], bench: [], filled: 0, total: 1 };
     assert.match(felder(buildEventEmbed(event(), k, [])), /\*\*Broadsword\*\* — \*frei\*/);
+  });
+});
+
+describe('Erwähnungen und Bild', () => {
+  it('nennt besetzte Plätze als Erwähnung, damit Discord sie hervorhebt', () => {
+    const k = {
+      slots: [slot(0, { discordId: '675025401549946920', displayName: 'MasterMomon', rating: 8 })],
+      bench: [],
+      filled: 1,
+      total: 1,
+    };
+    const wert = buildEventEmbed(event(), k, []).toJSON().fields[0].value;
+    assert.match(wert, /<@675025401549946920>/);
+    assert.doesNotMatch(wert, /MasterMomon/, 'der rohe Name gehoert nicht mehr rein');
+  });
+
+  it('hängt das Bild der Comp ans Embed', () => {
+    const k = { slots: [slot(0)], bench: [], filled: 0, total: 1 };
+    const mitBild = event({ image_url: 'https://example.com/comp.png' });
+    assert.equal(buildEventEmbed(mitBild, k, []).toJSON().image?.url, 'https://example.com/comp.png');
+  });
+
+  it('kommt ohne Bild genauso zurecht', () => {
+    const k = { slots: [slot(0)], bench: [], filled: 0, total: 1 };
+    assert.equal(buildEventEmbed(event(), k, []).toJSON().image, undefined);
+  });
+});
+
+describe('pingText', () => {
+  it('gibt @here und @everyone wörtlich zurück', () => {
+    assert.equal(pingText({ ping: 'here' }), '@here');
+    assert.equal(pingText({ ping: 'everyone' }), '@everyone');
+  });
+
+  it('schweigt, wenn nichts eingestellt ist', () => {
+    assert.equal(pingText({ ping: 'none' }), '');
+    assert.equal(pingText({}), '');
   });
 });

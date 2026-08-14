@@ -61,7 +61,7 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
    das legt alle Tabellen an. Die Waffen kommen später per Knopfdruck im
    Dashboard dazu.
    Bei einer Datenbank, die schon vor diesen Nachträgen angelegt wurde,
-   zusätzlich `db/002_bot_status.sql` bis `db/010_slot_alternativen.sql` der Reihe
+   zusätzlich `db/002_bot_status.sql` bis `db/011_comp_bild_ping.sql` der Reihe
    nach einspielen.
 3. Beim Ausführen fragt Supabase nach **Row Level Security**. Antwort:
    *Run and enable RLS*. Warum das wichtig ist, steht unten.
@@ -310,6 +310,21 @@ auf welchen Servern er sitzt, ob `DISCORD_GUILD_ID` und `OFFICER_IDS` gesetzt
 sind, und liefert die IDs zum Kopieren. Der Bot meldet sich dafür alle fünf
 Sekunden in der Tabelle `bot_status`; bleibt das Lebenszeichen länger als eine
 Minute aus, gilt er als aus.
+
+### Bild und Ping je Comp
+
+Auf der Comp-Seite lässt sich ein **Bild-Link** hinterlegen — der hängt beim
+Timer unter der Aufstellung — und ein **Ping** wählen: kein Ping, `@here` oder
+`@everyone`.
+
+Der Ping steht bewusst als Text *über* dem Embed und nicht darin: Erwähnungen
+innerhalb eines Embeds werden zwar hervorgehoben, lösen aber **keine**
+Benachrichtigung aus. Das ist eine Eigenheit von Discord. Genau deshalb sind die
+Spieler in der Aufstellung als `@Name` geschrieben — das sieht besser aus und
+pingt niemanden, während der eine echte Ping oben steht.
+
+Beides wird beim Anlegen ins Event eingefroren, genau wie die Slots: ändert
+jemand die Comp, bleibt ein laufender Timer, wie er war.
 
 ### Sperrfrist
 
