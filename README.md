@@ -160,7 +160,15 @@ dauert ein paar Sekunden, dann sind sie im Discord da.
 
 **Dashboard → Vercel:** Repo zu GitHub pushen, auf
 [vercel.com](https://vercel.com) mit GitHub anmelden, das Repo importieren.
-Wichtig: als **Root Directory** `dashboard` angeben. Alle Werte aus `.env.local`
+Wichtig: als **Root Directory** `dashboard` angeben.
+
+> **Region.** `dashboard/vercel.json` heftet die Serverfunktionen auf `fra1`
+> (Frankfurt), weil die Supabase-Datenbank in `eu-central-1` steht. Ohne das
+> rechnet Vercel in seiner Standardregion `iad1` (Washington) — jede
+> Datenbankabfrage macht dann rund 100 ms Atlantiküberflug, und eine Seite
+> macht mehrere nacheinander. Steht die Datenbank woanders, die Region hier
+> anpassen. Prüfen lässt sich das am Antwort-Header `X-Vercel-Id`: der zweite
+> Teil ist die Region, in der ausgeführt wurde. Alle Werte aus `.env.local`
 als Environment Variables eintragen, `DEV_LOGIN` weglassen. Nach dem ersten
 Deploy die Vercel-Adresse als zweite Redirect-URL im Discord-Portal ergänzen.
 

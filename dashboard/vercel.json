@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "//": "Die Datenbank steht in eu-central-1 (Frankfurt). Ohne diese Zeile fuehrt Vercel die Serverfunktionen in seiner Standardregion iad1 (Washington) aus - jede Abfrage macht dann einen Atlantikueberflug von rund 100 ms, und eine Seite macht mehrere nacheinander. fra1 liegt im selben Rechenzentrumsraum wie die Datenbank.",
+  "regions": ["fra1"]
+}
