@@ -1045,23 +1045,31 @@ async function warnBeiZweitemBot() {
 
 client.once(Events.ClientReady, async () => {
   console.log(`Eingeloggt als ${client.user.tag} · Zeitzone ${TIMEZONE}`);
-  await warnBeiZweitemBot();
-  await syncGuilds();
-  await registerCommands();
-
-  // Waffenliste und Datenbankverbindung vorwaermen. Discord verwirft
-  // Autovervollstaendigungen nach drei Sekunden - die erste Anfrage darf
-  // also nicht auf einen kalten Verbindungsaufbau warten.
   try {
-    const start = Date.now();
-    const weapons = await getWeapons();
-    console.log(`Waffenliste geladen: ${weapons.length} Stueck in ${Date.now() - start} ms`);
+    await warnBeiZweitemBot();
+    await syncGuilds();
+    await registerCommands();
+
+    // Waffenliste und Datenbankverbindung vorwaermen. Discord verwirft
+    // Autovervollstaendigungen nach drei Sekunden - die erste Anfrage darf
+    // also nicht auf einen kalten Verbindungsaufbau warten.
+    try {
+      const start = Date.now();
+      const weapons = await getWeapons();
+      console.log(`Waffenliste geladen: ${weapons.length} Stueck in ${Date.now() - start} ms`);
+    } catch (error) {
+      console.error('Waffenliste konnte nicht vorgeladen werden:', error.message);
+    }
+
+    // Nach einem Neustart alle laufenden Events wieder aufnehmen
+    await tick();
   } catch (error) {
-    console.error('Waffenliste konnte nicht vorgeladen werden:', error.message);
+    // Der Bot laeuft weiter: der Poll unten holt nach, was hier scheiterte,
+    // und eine Datenbank, die beim Start klemmt, ist meist Sekunden spaeter
+    // wieder da. Abbrechen waere die schlechtere Antwort.
+    console.error('Start unvollstaendig:', error?.message ?? error);
   }
 
-  // Nach einem Neustart alle laufenden Events wieder aufnehmen
-  await tick();
   setInterval(tick, POLL_INTERVAL_MS);
 });
 

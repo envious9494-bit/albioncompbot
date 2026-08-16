@@ -131,3 +131,34 @@ describe('parseStartTime - Unfug', () => {
     assert.throws(() => parseStartTime('90', ZONE), /90m/);
   });
 });
+
+describe('Mitternacht', () => {
+  it('nimmt 24:00 als Mitternacht statt es abzulehnen', () => {
+    // So schreibt man das Ende eines Tages, und so tippen es Leute auch.
+    const { stunde, minute } = wanduhr(parseStartTime('24:00', ZONE));
+    assert.equal(stunde, 0);
+    assert.equal(minute, 0);
+  });
+
+  it('trifft dabei dieselbe Nacht wie 0:00', () => {
+    assert.equal(parseStartTime('24:00', ZONE).getTime(), parseStartTime('0:00', ZONE).getTime());
+  });
+
+  it('versteht auch 2400 und die blosse 24', () => {
+    assert.deepEqual(wanduhr(parseStartTime('2400', ZONE)), { stunde: 0, minute: 0 });
+    assert.deepEqual(wanduhr(parseStartTime('24', ZONE)), { stunde: 0, minute: 0 });
+  });
+
+  it('liegt in der Zukunft', () => {
+    assert.ok(parseStartTime('24:00', ZONE).getTime() > Date.now());
+  });
+
+  it('kennt aber kein 24:30', () => {
+    assert.throws(() => parseStartTime('24:30', ZONE), /keine gültige Uhrzeit/);
+  });
+
+  it('schlaegt ab 25 weiter die Minutenform vor', () => {
+    assert.throws(() => parseStartTime('90', ZONE), /90m/);
+    assert.throws(() => parseStartTime('25', ZONE), /25m/);
+  });
+});

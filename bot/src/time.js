@@ -80,8 +80,15 @@ function parseUhrzeit(text, original) {
     text.match(/^(\d{1,2})$/); // 20
   if (!treffer) return null;
 
-  const stunde = Number(treffer[1]);
+  let stunde = Number(treffer[1]);
   const minute = treffer[2] ? Number(treffer[2]) : 0;
+
+  // 24:00 ist Mitternacht - so schreibt man das Ende eines Tages, und genau
+  // so tippen es Leute auch. 0 Uhr desselben Tages ist laengst vorbei, also
+  // landet es ueber heuteOderMorgen von selbst auf der kommenden Nacht.
+  // 24:30 gibt es dagegen nicht.
+  if (stunde === 24 && minute === 0) stunde = 0;
+
   if (stunde > 23 || minute > 59) {
     throw new Error(`\`${original}\` ist keine gültige Uhrzeit.`);
   }
@@ -154,7 +161,7 @@ export function parseStartTime(input, timeZone = TIMEZONE) {
   // --- reine Uhrzeit: "20:30", "2030", "20" ---------------------------
   // Eine blosse Zahl ueber 23 ist keine Stunde. Fast immer sind Minuten
   // gemeint, also den passenden Vorschlag mitgeben statt nur zu meckern.
-  if (/^\d{1,2}$/.test(raw) && Number(raw) > 23) {
+  if (/^\d{1,2}$/.test(raw) && Number(raw) > 24) {
     throw new Error(`\`${input}\` ist keine Stunde. Meintest du \`${input}m\` (in ${input} Minuten)?`);
   }
 
