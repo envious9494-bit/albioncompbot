@@ -353,6 +353,17 @@ export async function signOff(eventId, discordId, displayName) {
   `;
 }
 
+/** Events dieses Servers fuer die Auswahlliste bei /event - neueste zuerst. */
+export async function getRecentEvents(guildId, limit = 25) {
+  return sql`
+    select id, comp_name, title, starts_at, status
+    from event
+    where guild_id = ${guildId} and status <> 'cancelled'
+    order by starts_at desc
+    limit ${limit}
+  `;
+}
+
 /** Wer hat zugesagt und dann doch abgesagt - neueste zuerst. */
 export async function getSignOffs(eventId) {
   return sql`

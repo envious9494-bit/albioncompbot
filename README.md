@@ -220,6 +220,8 @@ liegen; das Skript schreibt nur.
 | -------------------------- | ------- | ---------------------------------------------------------- |
 | `/waffen`                  | alle    | Fragebogen: Kategorie wählen, ankreuzen, Skill per Knopf setzen |
 | `/timer <comp> <zeit>`     | Offis   | Timer mit Anmeldung erstellen                               |
+| `/event abmeldungen`       | Offis   | Wer hat zugesagt und dann abgesagt — nur für dich sichtbar   |
+| `/event absagen`           | Ersteller | Timer absagen                                             |
 
 Das Feld *zeit* bei `/timer` versteht:
 
@@ -277,6 +279,22 @@ Stand: **136 von 139**. Ohne Bild bleiben `Battlemount` und `Scout` — beides
 keine Waffen — sowie `Black Hands`: für dessen Item-ID hat Albions
 Render-Dienst auf keiner Tier-Stufe ein Bild. Die ID ist nachweislich richtig
 (sie steht so im offiziellen Item-Dump), es fehlt auf deren Seite.
+
+### Warum `/event` ein Befehl ist und kein Knopf
+
+Knöpfe hängen an der **Nachricht**, nicht am Betrachter — alle sehen
+dieselben. Es gibt keine Einstellung, die einen Knopf für einzelne Leute
+ausblendet. Slash-Befehle dagegen blendet Discord aus, wenn die Berechtigung
+fehlt. Deshalb liegen „Absagen" und die Abmeldungsliste dort und nicht mehr
+unter dem Timer.
+
+`/event` verlangt **Server verwalten**. Wer nur im Dashboard unter *Zugang*
+freigeschaltet ist, sieht den Befehl damit nicht — Discord kennt unsere
+Zugangsliste nicht. Für solche Leute lässt er sich einmalig unter
+*Servereinstellungen → Integrationen → Albion Bot* freigeben.
+
+Geprüft wird trotzdem im Bot: `abmeldungen` nur für Offiziere, `absagen` nur
+für den Ersteller. Das Ausblenden ist Bequemlichkeit, nicht die Absicherung.
 
 ### Die Skala im Waffenprofil
 

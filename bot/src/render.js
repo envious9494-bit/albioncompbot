@@ -300,28 +300,20 @@ export function buildEventButtons(event, dashboardUrl) {
     ),
   ];
 
-  const zweite = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`ev:cancel:${event.id}`)
-      .setLabel('Event absagen')
-      .setStyle(ButtonStyle.Danger),
-    // Sichtbar fuer alle, beantwortet nur Berechtigten - die Antwort ist
-    // ephemer, sieht also ohnehin nur, wer geklickt hat. Ein Knopf, den
-    // nur manche sehen, geht bei Discord nicht.
-    new ButtonBuilder()
-      .setCustomId(`ev:out:${event.id}`)
-      .setLabel('Abmeldungen')
-      .setStyle(ButtonStyle.Secondary),
-  );
+  // Absagen und die Abmeldungsliste haengen nicht mehr hier, sondern an
+  // /event. Discord blendet Slash-Befehle aus, wenn die Berechtigung
+  // fehlt - Knoepfe an einer Nachricht sieht dagegen immer jeder, das
+  // laesst sich nicht pro Person steuern.
   if (dashboardUrl) {
-    zweite.addComponents(
-      new ButtonBuilder()
-        .setLabel('Im Dashboard')
-        .setStyle(ButtonStyle.Link)
-        .setURL(`${dashboardUrl}/events/${event.id}`),
+    rows.push(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel('Im Dashboard')
+          .setStyle(ButtonStyle.Link)
+          .setURL(`${dashboardUrl}/events/${event.id}`),
+      ),
     );
   }
-  rows.push(zweite);
 
   return rows;
 }

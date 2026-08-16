@@ -20,6 +20,7 @@ import {
   getWeapons,
   loadEventState,
   lockEvent,
+  getRecentEvents,
   getSignOffs,
   signOff,
   saveAssignments,
@@ -157,6 +158,42 @@ const commands = [
           option.setName('menge').setDescription('z.B. 500, 1.5k oder 2m').setRequired(true),
         )
         .addStringOption((option) => option.setName('grund').setDescription('Warum')),
+    )
+    .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName('event')
+    .setDescription('Einen Timer verwalten')
+    // Discord blendet den Befehl fuer alle aus, die "Server verwalten"
+    // nicht haben. Das ist die einzige Stelle, an der sich etwas wirklich
+    // verstecken laesst - Knoepfe an einer Nachricht sieht immer jeder.
+    // Wer im Dashboard freigeschaltet ist, aber das Discord-Recht nicht
+    // hat, muss unter Servereinstellungen -> Integrationen freigegeben
+    // werden.
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .addSubcommand((sub) =>
+      sub
+        .setName('abmeldungen')
+        .setDescription('Wer hat zugesagt und dann doch abgesagt?')
+        .addStringOption((option) =>
+          option
+            .setName('timer')
+            .setDescription('Welcher Timer')
+            .setRequired(true)
+            .setAutocomplete(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('absagen')
+        .setDescription('Einen Timer absagen - nur wer ihn erstellt hat')
+        .addStringOption((option) =>
+          option
+            .setName('timer')
+            .setDescription('Welcher Timer')
+            .setRequired(true)
+            .setAutocomplete(true),
+        ),
     )
     .toJSON(),
 
@@ -446,6 +483,22 @@ async function handleAutocomplete(interaction) {
   const focused = interaction.options.getFocused(true);
   const query = focused.value.toLowerCase();
 
+  if (interaction.commandName === 'event' && focused.name === 'timer') {
+    const events = await getRecentEvents(interaction.guildId);
+    await interaction.respond(
+      events
+        .map((e) => ({
+          name: `#${e.id} · ${(e.title || e.comp_name).slice(0, 60)} · ${
+            e.status === 'open' ? 'offen' : 'steht'
+          }`,
+          value: String(e.id),
+        }))
+        .filter((e) => e.name.toLowerCase().includes(query))
+        .slice(0, 25),
+    );
+    return;
+  }
+
   if (interaction.commandName === 'timer' && focused.name === 'comp') {
     const comps = await getComps(interaction.guildId);
     await interaction.respond(
@@ -547,6 +600,60 @@ async function handleCommand(interaction) {
     await upsertPlayer(interaction.guildId, interaction.user.id, displayNameOf(interaction));
     const view = await renderQuestionnaire(interaction.guildId, interaction.user.id);
     await interaction.reply({ ...view, flags: MessageFlags.Ephemeral });
+    return;
+  }
+
+  if (interaction.commandName === 'event') {
+    const eventId = Number(interaction.options.getString('timer', true));
+    const [event] = await sql`
+      select id, guild_id, created_by, status from event where id = ${eventId}
+    `;
+
+    // Die ID kommt aus der Vorschlagsliste, aber tippen kann sie jeder.
+    // Ohne diese Pruefung liesse sich ein fremdes Event eines anderen
+    // Servers absagen - die Liste zeigt ja nur den eigenen.
+    if (!event || event.guild_id !== interaction.guildId) {
+      await interaction.reply({
+        content: 'Diesen Timer gibt es auf diesem Server nicht.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (interaction.options.getSubcommand() === 'abmeldungen') {
+      if (!(await isOfficer(interaction))) {
+        await interaction.reply({
+          content: 'Wer sich abgemeldet hat, sehen nur Offiziere.',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      await interaction.reply({
+        content: renderSignOffs(await getSignOffs(eventId)),
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: { parse: [] },
+      });
+      return;
+    }
+
+    // absagen - unveraendert nur der Ersteller
+    if (event.created_by !== interaction.user.id) {
+      await interaction.reply({
+        content: `Absagen darf nur, wer den Timer erstellt hat — das war <@${event.created_by}>.`,
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: { parse: [] },
+      });
+      return;
+    }
+    if (event.status === 'cancelled') {
+      await interaction.reply({ content: 'Der Timer ist schon abgesagt.', flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await cancelEvent(eventId);
+    await refreshEvent(eventId, { force: true });
+    await interaction.editReply(`Timer #${eventId} abgesagt.`);
     return;
   }
 
