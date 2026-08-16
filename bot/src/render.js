@@ -300,20 +300,31 @@ export function buildEventButtons(event, dashboardUrl) {
     ),
   ];
 
-  // Absagen und die Abmeldungsliste haengen nicht mehr hier, sondern an
-  // /event. Discord blendet Slash-Befehle aus, wenn die Berechtigung
-  // fehlt - Knoepfe an einer Nachricht sieht dagegen immer jeder, das
-  // laesst sich nicht pro Person steuern.
+  // Beide Knoepfe sieht jeder - Komponenten haengen an der Nachricht, nicht
+  // am Betrachter, daran laesst sich nichts drehen. Geschuetzt ist, was
+  // dahinter passiert: die Antwort ist ephemer, und wer nicht darf, bekommt
+  // eine Absage. Dieselben Funktionen gibt es zusaetzlich als /event - der
+  // Befehl ist fuer Unberechtigte unsichtbar, wer das lieber mag.
+  const zweite = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`ev:cancel:${event.id}`)
+      .setLabel('Event absagen')
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(`ev:out:${event.id}`)
+      .setLabel('Abmeldungen')
+      .setStyle(ButtonStyle.Secondary),
+  );
+
   if (dashboardUrl) {
-    rows.push(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setLabel('Im Dashboard')
-          .setStyle(ButtonStyle.Link)
-          .setURL(`${dashboardUrl}/events/${event.id}`),
-      ),
+    zweite.addComponents(
+      new ButtonBuilder()
+        .setLabel('Im Dashboard')
+        .setStyle(ButtonStyle.Link)
+        .setURL(`${dashboardUrl}/events/${event.id}`),
     );
   }
+  rows.push(zweite);
 
   return rows;
 }

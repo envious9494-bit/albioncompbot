@@ -224,13 +224,16 @@ keine Waffen — sowie `Black Hands`: für dessen Item-ID hat Albions
 Render-Dienst auf keiner Tier-Stufe ein Bild. Die ID ist nachweislich richtig
 (sie steht so im offiziellen Item-Dump), es fehlt auf deren Seite.
 
-### Warum `/event` ein Befehl ist und kein Knopf
+### Knopf und Befehl — beides
 
-Knöpfe hängen an der **Nachricht**, nicht am Betrachter — alle sehen
-dieselben. Es gibt keine Einstellung, die einen Knopf für einzelne Leute
-ausblendet. Slash-Befehle dagegen blendet Discord aus, wenn die Berechtigung
-fehlt. Deshalb liegen „Absagen" und die Abmeldungsliste dort und nicht mehr
-unter dem Timer.
+„Event absagen" und „Abmeldungen" gibt es als **Knopf** unter dem Timer und
+zusätzlich als **`/event`**. Beide Wege landen im selben Code.
+
+Der Unterschied ist die Sichtbarkeit: Knöpfe hängen an der **Nachricht**, nicht
+am Betrachter — alle sehen dieselben, daran lässt sich nichts drehen.
+Slash-Befehle blendet Discord dagegen aus, wenn die Berechtigung fehlt. Wer
+will, dass Member die Knöpfe gar nicht erst sehen, nimmt den Befehl; wer einen
+Klick statt Tippen will, den Knopf.
 
 `/event` verlangt **Server verwalten**. Wer nur im Dashboard unter *Zugang*
 freigeschaltet ist, sieht den Befehl damit nicht — Discord kennt unsere
