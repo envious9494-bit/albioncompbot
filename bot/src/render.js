@@ -305,6 +305,13 @@ export function buildEventButtons(event, dashboardUrl) {
       .setCustomId(`ev:cancel:${event.id}`)
       .setLabel('Event absagen')
       .setStyle(ButtonStyle.Danger),
+    // Sichtbar fuer alle, beantwortet nur Berechtigten - die Antwort ist
+    // ephemer, sieht also ohnehin nur, wer geklickt hat. Ein Knopf, den
+    // nur manche sehen, geht bei Discord nicht.
+    new ButtonBuilder()
+      .setCustomId(`ev:out:${event.id}`)
+      .setLabel('Abmeldungen')
+      .setStyle(ButtonStyle.Secondary),
   );
   if (dashboardUrl) {
     zweite.addComponents(
@@ -357,6 +364,29 @@ export function buildLockMessage(event, composition, pingRoleId) {
 
   const text = zeilen.join('\n');
   return text.length > 1990 ? `${text.slice(0, 1980)}\n…` : text;
+}
+
+/**
+ * Die Liste der Abmeldungen - nur fuer Berechtigte, deshalb ephemer.
+ *
+ * Mit Zeitpunkt: eine Absage zwei Minuten vor Start ist etwas anderes als
+ * eine von gestern, und genau danach sucht der Leader.
+ */
+export function renderSignOffs(abmeldungen) {
+  if (abmeldungen.length === 0) {
+    return 'Bisher hat sich niemand wieder abgemeldet.';
+  }
+
+  const zeilen = abmeldungen.map(
+    (a) => `<@${a.discord_id}> — ${discordTime(new Date(a.updated_at), 'R')}`,
+  );
+
+  const kopf = `**${abmeldungen.length} ${abmeldungen.length === 1 ? 'Abmeldung' : 'Abmeldungen'}**`;
+  const text = [kopf, ...zeilen].join('\n');
+
+  // Ephemere Antworten sind auch nur Nachrichten - 2000 Zeichen.
+  if (text.length <= 1950) return text;
+  return [kopf, ...zeilen.slice(0, 25), '-# …und weitere'].join('\n');
 }
 
 /** Billiger Hash, um das Embed nur bei echten Aenderungen neu zu schreiben. */

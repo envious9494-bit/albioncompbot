@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { buildEventEmbed, hashComposition, pingText } from '../src/render.js';
+import { buildEventEmbed, hashComposition, pingText, renderSignOffs } from '../src/render.js';
 
 /** Ein Event, das gleich losgeht und noch offen ist. */
 function event(extra = {}) {
@@ -334,5 +334,39 @@ describe('pingText', () => {
   it('schweigt, wenn nichts eingestellt ist', () => {
     assert.equal(pingText({ ping: 'none' }), '');
     assert.equal(pingText({}), '');
+  });
+});
+
+describe('Abmeldungen', () => {
+  it('sagt es klar, wenn sich niemand abgemeldet hat', () => {
+    assert.match(renderSignOffs([]), /niemand wieder abgemeldet/);
+  });
+
+  it('nennt jeden als Erwähnung mit Zeitpunkt', () => {
+    const text = renderSignOffs([
+      { discord_id: '111', display_name: 'A', updated_at: new Date(Date.now() - 5 * 60_000) },
+      { discord_id: '222', display_name: 'B', updated_at: new Date(Date.now() - 60 * 60_000) },
+    ]);
+    assert.match(text, /2 Abmeldungen/);
+    assert.match(text, /<@111>/);
+    assert.match(text, /<@222>/);
+    assert.match(text, /<t:\d+:R>/, 'mit relativem Zeitstempel');
+  });
+
+  it('beugt richtig bei genau einer', () => {
+    const text = renderSignOffs([{ discord_id: '1', updated_at: new Date() }]);
+    assert.match(text, /1 Abmeldung\*\*/);
+    assert.doesNotMatch(text, /Abmeldungen/);
+  });
+
+  it('bleibt unter Discords 2000 Zeichen', () => {
+    const viele = Array.from({ length: 120 }, (_, i) => ({
+      discord_id: String(600000000000000000 + i),
+      updated_at: new Date(),
+    }));
+    const text = renderSignOffs(viele);
+    assert.ok(text.length <= 2000, `${text.length} Zeichen`);
+    assert.match(text, /120 Abmeldungen/, 'die Gesamtzahl bleibt ehrlich');
+    assert.match(text, /und weitere/);
   });
 });

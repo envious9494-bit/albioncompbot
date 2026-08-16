@@ -329,12 +329,38 @@ export async function setSignup(eventId, discordId, displayName, status) {
     values (${eventId}, ${discordId}, ${displayName}, ${status})
     on conflict (event_id, discord_id) do update
       set status = excluded.status,
+          updated_at = now(),
           display_name = excluded.display_name
   `;
 }
 
-export async function removeSignup(eventId, discordId) {
-  await sql`delete from signup where event_id = ${eventId} and discord_id = ${discordId}`;
+/**
+ * Meldet jemanden ab - ohne die Zeile zu loeschen.
+ *
+ * Fuer die Aufstellung ist das dasselbe wie vorher: die filtert auf 'yes'.
+ * Fuer den Leader ist es der ganze Unterschied - er sieht sonst nicht, ob
+ * sich jemand nie gemeldet oder erst zugesagt und dann abgesagt hat. Zehn
+ * Minuten vor Start ist das die wichtigere der beiden Zahlen.
+ */
+export async function signOff(eventId, discordId, displayName) {
+  await sql`
+    insert into signup (event_id, discord_id, display_name, status)
+    values (${eventId}, ${discordId}, ${displayName}, 'out')
+    on conflict (event_id, discord_id) do update
+      set status = 'out',
+          display_name = coalesce(excluded.display_name, signup.display_name),
+          updated_at = now()
+  `;
+}
+
+/** Wer hat zugesagt und dann doch abgesagt - neueste zuerst. */
+export async function getSignOffs(eventId) {
+  return sql`
+    select discord_id, display_name, updated_at
+    from signup
+    where event_id = ${eventId} and status = 'out'
+    order by updated_at desc
+  `;
 }
 
 export async function getOpenEvents() {

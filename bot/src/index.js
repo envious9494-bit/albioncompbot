@@ -20,7 +20,8 @@ import {
   getWeapons,
   loadEventState,
   lockEvent,
-  removeSignup,
+  getSignOffs,
+  signOff,
   saveAssignments,
   setMessageId,
   setRenderHash,
@@ -51,6 +52,7 @@ import {
   buildLockMessage,
   hashComposition,
   pingText,
+  renderSignOffs,
 } from './render.js';
 import { discordTime, parseStartTime, TIMEZONE } from './time.js';
 
@@ -685,6 +687,27 @@ async function handleButton(interaction) {
     return;
   }
 
+  if (kind === 'ev' && action === 'out') {
+    // Ephemer, also sieht die Antwort nur, wer geklickt hat. Trotzdem
+    // pruefen: sonst waere die Liste fuer jeden abrufbar, der den Knopf
+    // findet - und das ist genau das, was nicht sein soll.
+    if (!(await isOfficer(interaction))) {
+      await interaction.reply({
+        content: 'Wer sich abgemeldet hat, sehen nur Offiziere.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const abmeldungen = await getSignOffs(eventId);
+    await interaction.reply({
+      content: renderSignOffs(abmeldungen),
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: { parse: [] },
+    });
+    return;
+  }
+
   if (kind === 'ev' && action === 'cancel') {
     const [event] = await sql`select created_by from event where id = ${eventId}`;
     if (!event) {
@@ -725,7 +748,7 @@ async function handleButton(interaction) {
   await upsertPlayer(interaction.guildId, interaction.user.id, name);
 
   if (action === 'out') {
-    await removeSignup(eventId, interaction.user.id);
+    await signOff(eventId, interaction.user.id, displayNameOf(interaction));
   } else {
     await setSignup(eventId, interaction.user.id, name, action);
   }
