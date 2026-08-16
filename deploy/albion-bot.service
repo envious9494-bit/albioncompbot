@@ -1,0 +1,30 @@
+[Unit]
+# Albion Comp Bot - laeuft neben Noxa auf demselben Server.
+#
+# Bewusst kein After=postgresql: die Datenbank liegt bei Supabase, nicht
+# lokal. Der Bot kommt auch hoch, wenn sie kurz nicht erreichbar ist, und
+# holt sich die Waffenliste beim naechsten Versuch.
+Description=Albion Comp Bot (Discord)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=albion
+Group=albion
+WorkingDirectory=/opt/albion-bot
+EnvironmentFile=/opt/albion-bot/bot/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node bot/src/index.js
+Restart=on-failure
+RestartSec=5
+
+# Absichern - dieselbe Haertung wie bei Noxa
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/albion-bot
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
