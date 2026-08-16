@@ -70,5 +70,10 @@ ssh "$HOST" "
 "
 
 echo "==> Antwortet das Dashboard?"
-ssh "$HOST" "curl -sf -o /dev/null -w 'HTTP %{http_code}
-' --max-time 20 http://127.0.0.1:3200/" \n  || { echo 'Dashboard antwortet nicht:'; ssh "$HOST" 'journalctl -u albion-dashboard -n 20 --no-pager'; exit 1; }
+if ! ssh "$HOST" "curl -sf -o /dev/null -w %{http_code} --max-time 20 http://127.0.0.1:3200/"; then
+  echo
+  echo "Dashboard antwortet nicht:"
+  ssh "$HOST" "journalctl -u albion-dashboard -n 20 --no-pager"
+  exit 1
+fi
+echo " - Dashboard steht."
