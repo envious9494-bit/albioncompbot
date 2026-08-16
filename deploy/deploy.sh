@@ -41,6 +41,19 @@ git archive --format=tar HEAD | ssh "$HOST" "
   systemctl restart $DIENST
 "
 
+echo "==> Dashboard nach $HOST:/opt/albion-dashboard"
+# Getrennt vom Bot: eigener Dienst, eigener Build. Faellt das Dashboard um,
+# laeuft der Bot weiter - und umgekehrt.
+git archive --format=tar HEAD dashboard | ssh "$HOST" "
+  set -e
+  cd /opt/albion-dashboard
+  tar -x --strip-components=1 -f -
+  npm install --no-fund --no-audit >/dev/null
+  npm run build >/dev/null
+  chown -R albion:albion /opt/albion-dashboard
+  systemctl restart albion-dashboard
+"
+
 echo "==> Startmeldung abwarten"
 ssh "$HOST" "
   for i in \$(seq 1 30); do
@@ -55,3 +68,7 @@ ssh "$HOST" "
   journalctl -u $DIENST -n 40 --no-pager
   exit 1
 "
+
+echo "==> Antwortet das Dashboard?"
+ssh "$HOST" "curl -sf -o /dev/null -w 'HTTP %{http_code}
+' --max-time 20 http://127.0.0.1:3200/"   || { echo 'Dashboard antwortet nicht:'; ssh "$HOST" 'journalctl -u albion-dashboard -n 20 --no-pager'; exit 1; }

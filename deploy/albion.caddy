@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------
+#  Albion Comp Dashboard
+#
+#  Eigener Dienst, eigener Nutzer, eigene Datenbank. Steht nur deshalb
+#  bei Caddy, weil der das TLS macht - mit Noxa hat es sonst nichts zu
+#  tun, und ein Fehler hier legt Noxa nicht lahm.
+#
+#  Der Dienst lauscht auf 127.0.0.1:3200, ist also von aussen nur ueber
+#  diesen Block erreichbar.
+# ---------------------------------------------------------------------
+albion.noxa-bot.org {
+	# Verraet nicht, welche Software antwortet - dieselbe Haertung wie
+	# beim Noxa-Block darueber.
+	header {
+		-Via
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:3200
+
+	encode gzip
+
+	log {
+		output file /var/log/caddy/albion.log {
+			roll_size 20MiB
+			roll_keep 8
+		}
+	}
+}

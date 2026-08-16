@@ -1,0 +1,27 @@
+[Unit]
+# Albion Comp Dashboard (Next.js) - laeuft neben Noxa auf demselben Server.
+Description=Albion Comp Dashboard
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=albion
+Group=albion
+WorkingDirectory=/opt/albion-dashboard
+EnvironmentFile=/opt/albion-dashboard/.env.local
+Environment=NODE_ENV=production
+# Nur auf localhost: von aussen kommt ausschliesslich Caddy dran, und der
+# bringt TLS mit. Ohne die Bindung waere der Port offen im Netz.
+ExecStart=/usr/bin/npx next start -H 127.0.0.1 -p 3200
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/albion-dashboard
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
