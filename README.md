@@ -201,6 +201,52 @@ auf `Eingeloggt als` im Journal. Kommt die Meldung nicht, schlägt es fehl.
 > `power: restart`. Zwei Instanzen mit demselben Token schreiben sich die
 > Timer-Nachrichten gegenseitig um.
 
+## Befehle
+
+| Befehl | Wer | Was |
+| --- | --- | --- |
+| `/waffen` | alle | Fragebogen: Kategorie wählen, ankreuzen, Skill per Knopf setzen |
+| `/timer <comp> <zeit>` | Offis | Timer mit Anmeldung erstellen |
+| `/event abmeldungen` | Offis | Wer hat zugesagt und dann abgesagt — nur für dich sichtbar |
+| `/event absagen` | Ersteller | Timer absagen |
+
+Dieselben zwei Event-Funktionen gibt es auch als Knopf unter dem Timer.
+
+Das Feld *zeit* bei `/timer` versteht:
+
+| Eingabe | Bedeutung |
+| --- | --- |
+| `20:30` · `20.30` · `2030` | heute um 20:30, falls schon vorbei: morgen |
+| `20` | heute um 20:00 — eine bloße Zahl ist die volle Stunde |
+| `24:00` · `2400` · `24` | Mitternacht, also die kommende Nacht |
+| `+45` · `45m` | in 45 Minuten |
+| `2h` · `1h30` · `1.5h` | in zwei bzw. anderthalb Stunden |
+| `14.08 20:30` | nächstes Vorkommen dieses Datums |
+| `14.08.2026 20:30` | genau dieses Datum |
+
+Ein führendes `+` ist bei jeder Dauer erlaubt, also auch `+2h` und `+90m`.
+Ohne `+` bleibt eine bloße Zahl die Uhrzeit: `20` ist 20:00, `+20` sind zwanzig
+Minuten.
+
+Uhrzeiten gelten in der Zeitzone aus `TIMEZONE`; im Discord sieht danach jeder
+seine eigene Ortszeit. Der Bot spiegelt die verstandene Zeit in der Bestätigung
+zurück — wer sich vertippt, sieht es sofort statt erst beim Start.
+
+Zahlen über 24 sind keine Stunde: auf `90` kommt der Hinweis, dass wohl `90m`
+gemeint war. Und wenn die Sperrfrist fast so lang ist wie der Vorlauf (`/timer`
+in 11 Minuten bei 10 Minuten Sperre), warnt er — sonst friert die Aufstellung
+ein, bevor sich jemand anmelden konnte.
+
+**Rechte gelten immer nur für einen Server.** Timer erstellen darf, wer dort
+*Server verwalten* hat oder im Dashboard unter **Zugang** eingetragen ist —
+sonst niemand. Es gibt bewusst kein serverübergreifendes Recht: wer den Bot
+betreibt, sieht deswegen keine fremden Comps, Profile oder Kontostände.
+
+**Absagen darf nur, wer den Timer erstellt hat** — auch kein Offizier sonst.
+Wer es trotzdem versucht, erfährt, wer der Ersteller war. Die Kehrseite: ist
+derjenige nicht erreichbar, lässt sich der Timer im Discord nicht mehr stoppen
+und friert zur Sperrfrist mit Ping ein.
+
 ### Item-Bilder statt Emojis
 
 Jede Waffe trägt ihr echtes Albion-Item-Bild — in der Aufstellung, im Ping
