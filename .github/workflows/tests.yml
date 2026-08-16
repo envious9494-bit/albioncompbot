@@ -1,0 +1,34 @@
+# Bei jedem Push auf main: die Tests laufen lassen.
+#
+# Ausgeliefert wird hier NICHT mehr. Der Bot läuft seit dem Umzug auf einem
+# eigenen Server (systemd-Dienst `albion-bot`), und dorthin geht es über
+# `deploy/deploy.sh` von Hand.
+#
+# Das ist kein Schönheitsfehler gewesen: solange hier noch das alte
+# Ausliefern nach bot-hosting.net stand, hat jeder Push den dortigen,
+# bewusst gestoppten Bot wieder gestartet — inklusive `power: restart`.
+# Zwei Instanzen mit demselben Token schreiben sich gegenseitig die
+# Timer-Nachrichten um, und seit dem Datenbankumzug lasen sie sogar aus
+# zwei verschiedenen Datenbanken.
+
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: npm install
+
+      - run: npm test

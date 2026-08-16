@@ -182,80 +182,24 @@ anlegen, Runtime Node.js. Zwei Einstellungen entscheiden, ob er startet:
 - **Env → Raw .env:** den Inhalt von `bot/.env` einfügen. `DASHBOARD_URL` auf
   die Vercel-Adresse zeigen lassen.
 
-### Automatisch ausliefern
+### Ausliefern
 
-Der Hoster klont das Repo nur einmal. Im Container liegt danach kein Git — ein
-`git pull` gibt es dort also nicht, und sein *GitHub sync*-Knopf im
-Dateibrowser müsste jedes Mal von Hand gedrückt werden.
+Der Bot läuft auf einem eigenen Server als systemd-Dienst `albion-bot` in
+`/opt/albion-bot`, gegen eine lokale Postgres-Datenbank. Neuer Stand:
 
-Stattdessen erledigt das
-[`.github/workflows/bot-ausliefern.yml`](.github/workflows/bot-ausliefern.yml):
-bei jedem Push auf `main`, der `bot/` berührt, laufen erst die Tests, dann
-schiebt [`push-to-host.mjs`](.github/scripts/push-to-host.mjs) die Dateien über
-die Hoster-API hoch und startet neu. Danach liest es die Konsole mit und bricht
-ab, wenn dort binnen 90 Sekunden kein `Eingeloggt als …` auftaucht — sonst wäre
-jede Auslieferung grün, auch wenn der Bot beim Start sofort wieder stirbt.
+```bash
+bash deploy/deploy.sh
+```
 
-Dafür braucht das Repo zwei Secrets unter *Settings → Secrets and variables →
-Actions*:
+Das schiebt per `git archive` genau das rüber, was im Repo ist — kein
+`node_modules`, keine `.env` —, installiert, startet den Dienst neu und wartet
+auf `Eingeloggt als` im Journal. Kommt die Meldung nicht, schlägt es fehl.
 
-| Secret | Woher |
-| --- | --- |
-| `BOTHOST_API_KEY` | [bot-hosting.net/a/developer](https://bot-hosting.net/a/developer), Rechte `files:write` (Dateien schreiben), `deployments:power` (neu starten) und `deployments:read` (Konsole mitlesen) |
-| `BOTHOST_DEPLOYMENT` | die ID aus der Adresszeile des Deployments |
-
-Geschickt wird nur, was git kennt — Lokales und vor allem die `.env` bleiben
-draußen. Die Zugangsdaten stehen in den Umgebungsvariablen des Hosters und
-werden nie überschrieben. Gelöschte Dateien bleiben als Leichen auf dem Server
-liegen; das Skript schreibt nur.
-
-> Im Free-Tier von bot-hosting.net wird der Server neu aufgesetzt, wenn die
-> Coins ausgehen. Deshalb liegen alle Daten in Supabase und keine Timer im
-> Speicher — der Bot nimmt laufende Events nach einem Neustart von selbst wieder
-> auf.
-
-## Befehle
-
-| Befehl                     | Wer     | Was                                                        |
-| -------------------------- | ------- | ---------------------------------------------------------- |
-| `/waffen`                  | alle    | Fragebogen: Kategorie wählen, ankreuzen, Skill per Knopf setzen |
-| `/timer <comp> <zeit>`     | Offis   | Timer mit Anmeldung erstellen                               |
-| `/event abmeldungen`       | Offis   | Wer hat zugesagt und dann abgesagt — nur für dich sichtbar   |
-| `/event absagen`           | Ersteller | Timer absagen                                             |
-
-Das Feld *zeit* bei `/timer` versteht:
-
-| Eingabe | Bedeutung |
-| --- | --- |
-| `20:30` · `20.30` · `2030` | heute um 20:30, falls schon vorbei: morgen |
-| `20` | heute um 20:00 — eine blosse Zahl ist die volle Stunde |
-| `+45` · `45m` | in 45 Minuten |
-| `2h` · `1h30` · `1.5h` | in zwei bzw. anderthalb Stunden |
-
-Ein führendes `+` ist bei jeder Dauer erlaubt, also auch `+2h` und `+90m`.
-Ohne `+` bleibt eine bloße Zahl die Uhrzeit: `20` ist 20:00, `+20` sind zwanzig
-Minuten.
-| `14.08 20:30` | nächstes Vorkommen dieses Datums |
-| `14.08.2026 20:30` | genau dieses Datum |
-
-Uhrzeiten gelten in der Zeitzone aus `TIMEZONE`; im Discord sieht danach jeder
-seine eigene Ortszeit. Der Bot spiegelt die verstandene Zeit in der Bestätigung
-zurück — wer sich vertippt, sieht es sofort statt erst beim Start.
-
-Zahlen über 23 sind keine Stunde: auf `90` kommt der Hinweis, dass wohl `90m`
-gemeint war. Und wenn die Sperrfrist fast so lang ist wie der Vorlauf (`/timer`
-in 11 Minuten bei 10 Minuten Sperre), warnt er — sonst friert die Aufstellung
-ein, bevor sich jemand anmelden konnte.
-
-**Rechte gelten immer nur für einen Server.** Timer erstellen darf, wer dort
-*Server verwalten* hat oder im Dashboard unter **Zugang** eingetragen ist —
-sonst niemand. Es gibt bewusst kein serverübergreifendes Recht: wer den Bot
-betreibt, sieht deswegen keine fremden Comps, Profile oder Kontostände.
-
-**Absagen darf nur, wer den Timer erstellt hat** — auch kein Offizier sonst.
-Der Knopf steht zwar unter jeder Nachricht, weist aber jeden anderen ab und
-nennt den Ersteller. Die Kehrseite: ist derjenige nicht erreichbar, lässt sich
-der Timer im Discord nicht mehr stoppen und friert zur Sperrfrist mit Ping ein.
+> Die GitHub-Action liefert **nicht** aus, sie lässt nur die Tests laufen. Vorher
+> stand dort ein Deploy nach bot-hosting.net — der hat nach dem Umzug jeden Push
+> genutzt, um den dort bewusst gestoppten Bot wieder zu starten, inklusive
+> `power: restart`. Zwei Instanzen mit demselben Token schreiben sich die
+> Timer-Nachrichten gegenseitig um.
 
 ### Item-Bilder statt Emojis
 
