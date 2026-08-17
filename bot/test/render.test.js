@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { buildEventEmbed, hashComposition, pingText, renderSignOffs } from '../src/render.js';
+import {
+  buildEventEmbed,
+  buildLockMessage,
+  hashComposition,
+  pingText,
+  renderSignOffs,
+} from '../src/render.js';
 
 /** Ein Event, das gleich losgeht und noch offen ist. */
 function event(extra = {}) {
@@ -368,5 +374,65 @@ describe('Abmeldungen', () => {
     assert.ok(text.length <= 2000, `${text.length} Zeichen`);
     assert.match(text, /120 Abmeldungen/, 'die Gesamtzahl bleibt ehrlich');
     assert.match(text, /und weitere/);
+  });
+});
+
+describe('Ping beim Einfrieren', () => {
+  function besetzt(n) {
+    return {
+      slots: Array.from({ length: n }, (_, i) =>
+        slot(i, {
+          discordId: `${100 + i}`,
+          displayName: `Spieler${i}`,
+          rating: 8,
+          label: 'Main Tank',
+        }),
+      ),
+      bench: [],
+      filled: n,
+      total: n,
+    };
+  }
+
+  it('setzt Waffe und Person auf dieselbe Zeile', () => {
+    const text = buildLockMessage(event(), besetzt(3), null);
+    const zeilen = text.split('\n').filter((z) => z.includes('<@1'));
+    assert.equal(zeilen.length, 3, 'drei Plätze, drei Zeilen');
+    for (const zeile of zeilen) {
+      assert.match(zeile, /Main Tank · Broadsword.*<@1\d\d>/, 'Waffe und Person zusammen');
+    }
+  });
+
+  it('nennt die Überschrift und die offenen Plätze', () => {
+    const k = besetzt(2);
+    k.slots.push(slot(2, { weaponName: 'Heavy Mace' }), slot(3, { weaponName: 'Heavy Mace' }));
+    k.total = 4;
+    const text = buildLockMessage(event({ title: 'Roam' }), k, null);
+    assert.match(text, /\*\*Roam\*\* — Aufstellung steht/);
+    assert.match(text, /2× Heavy Mace/);
+  });
+
+  it('pingt die Bank nicht, nennt sie aber', () => {
+    const k = besetzt(1);
+    k.bench = [{ discordId: '999', displayName: 'Wartender', bestRating: 5 }];
+    const text = buildLockMessage(event(), k, null);
+    assert.match(text, /Bank: Wartender/);
+    assert.doesNotMatch(text, /<@999>/, 'die Bank wird nicht angepingt');
+  });
+
+  it('haengt die Rolle vorne an, wenn eine gesetzt ist', () => {
+    assert.match(buildLockMessage(event(), besetzt(1), '4242'), /^<@&4242>/);
+  });
+
+  it('bleibt unter 2000 Zeichen und behält dabei Kopf und Fuß', () => {
+    const k = besetzt(60);
+    k.bench = [{ discordId: '1', displayName: 'Bankler', bestRating: 3 }];
+    const text = buildLockMessage(event({ title: 'Grosse Comp' }), k, '4242');
+
+    assert.ok(text.length <= 2000, `${text.length} Zeichen`);
+    assert.match(text, /^<@&4242>/, 'Rollen-Ping bleibt');
+    assert.match(text, /Grosse Comp/, 'Überschrift bleibt');
+    assert.match(text, /Bank: Bankler/, 'Fuß bleibt');
+    assert.match(text, /und \d+ weitere/, 'sagt, wie viele fehlen');
   });
 });

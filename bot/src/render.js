@@ -7,9 +7,9 @@ import { discordTime } from './time.js';
 //  Farbe bedeutet Zustand, nichts sonst. Die Beschreibung traegt das
 //  Layout; Felder sind fuer abgegrenzte Bloecke da, nicht fuer jede Zeile.
 //
-//  Wichtigste Entscheidung: die Aufstellung wird nach Waffe gebuendelt
-//  statt Platz fuer Platz aufgelistet. Bei einer 20er-Comp sind das vier
-//  Zeilen statt zwanzig, und man sieht auf einen Blick, wo es klemmt.
+//  Wichtigste Entscheidung: eine Zeile je Platz, in der Reihenfolge der
+//  Comp - im Embed wie im Ping. Frueher wurde nach Waffe gebuendelt; das
+//  war kuerzer, aber man sah nicht, wer genau auf welchem Platz steht.
 // =====================================================================
 
 const FARBE_OFFEN = 0x5865f2; // Blurple: Anmeldung laeuft
@@ -18,39 +18,6 @@ const FARBE_ABGESAGT = 0x99aab5; // Grau: erledigt
 
 /** Discord erlaubt 1024 Zeichen pro Feld. */
 const FELD_GRENZE = 1000;
-
-/**
- * Fasst gleiche Plaetze zusammen. Zwei Plaetze gehoeren zusammen, wenn
- * Waffe und Bezeichnung uebereinstimmen - ein "Main Tank" bleibt also vom
- * gewoehnlichen Heavy Mace getrennt.
- */
-function gruppiere(slots) {
-  const gruppen = new Map();
-
-  for (const slot of slots) {
-    const schluessel = `${slot.weaponId}|${slot.label ?? ''}`;
-    if (!gruppen.has(schluessel)) {
-      gruppen.set(schluessel, {
-        icon: slot.icon || '•',
-        name: slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName,
-        besetzt: [],
-        frei: 0,
-      });
-    }
-    const gruppe = gruppen.get(schluessel);
-    if (slot.discordId) {
-      gruppe.besetzt.push({
-        name: slot.displayName ?? slot.discordId,
-        rating: slot.rating,
-        locked: slot.locked,
-      });
-    } else {
-      gruppe.frei += 1;
-    }
-  }
-
-  return [...gruppen.values()];
-}
 
 /** So viele Plaetze gehoeren untereinander, bevor daneben weitergeht. */
 const PRO_SPALTE = 20;
@@ -334,19 +301,21 @@ export function buildEventButtons(event, dashboardUrl) {
  * nach seiner Waffe, nicht nach seinem Namen in einer Liste von zwanzig.
  */
 export function buildLockMessage(event, composition, pingRoleId) {
-  const zeilen = [];
-  if (pingRoleId) zeilen.push(`<@&${pingRoleId}>`);
-  zeilen.push(`**${event.title || event.comp_name}** — Aufstellung steht:`);
-  zeilen.push('');
+  const kopf = [];
+  if (pingRoleId) kopf.push(`<@&${pingRoleId}>`);
+  kopf.push(`**${event.title || event.comp_name}** — Aufstellung steht:`);
 
-  for (const gruppe of gruppiere(composition.slots)) {
-    const besetzt = composition.slots.filter(
-      (slot) => slot.discordId && (slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName) === gruppe.name,
-    );
-    if (besetzt.length === 0) continue;
-    zeilen.push(`${gruppe.icon} **${gruppe.name}**`);
-    zeilen.push(besetzt.map((slot) => `<@${slot.discordId}>`).join(' '));
-  }
+  // Ein Platz, eine Zeile - genau wie im Embed. Vorher stand die Waffe auf
+  // der einen und die Person auf der naechsten Zeile: doppelt so hoch, und
+  // beim Ueberfliegen sucht man zu jedem Namen die Waffe darueber.
+  const zeilen = composition.slots
+    .filter((slot) => slot.discordId)
+    .map((slot) => {
+      const name = slot.label ? `${slot.label} · ${slot.weaponName}` : slot.weaponName;
+      return `${kompaktesEmoji(slot.icon)} **${name}** — <@${slot.discordId}>`;
+    });
+
+  const fuss = [];
 
   const offen = composition.slots.filter((slot) => !slot.discordId);
   if (offen.length) {
@@ -354,19 +323,37 @@ export function buildLockMessage(event, composition, pingRoleId) {
     for (const slot of offen) {
       nachWaffe.set(slot.weaponName, (nachWaffe.get(slot.weaponName) ?? 0) + 1);
     }
-    zeilen.push('');
-    zeilen.push(
-      `⚠️ Offen: ${[...nachWaffe].map(([waffe, anzahl]) => `${anzahl}× ${waffe}`).join(', ')}`,
+    fuss.push('');
+    fuss.push(
+      `⚠️ **Offen:** ${[...nachWaffe].map(([waffe, anzahl]) => `${anzahl}× ${waffe}`).join(' · ')}`,
     );
   }
 
   if (composition.bench.length) {
-    zeilen.push('');
-    zeilen.push(`Bank: ${composition.bench.map((p) => `<@${p.discordId}>`).join(' ')}`);
+    fuss.push('');
+    // Ohne Erwaehnung: die Bank soll wissen, dass sie Bank ist, aber nicht
+    // dafuer angepingt werden.
+    fuss.push(`-# Bank: ${composition.bench.map((p) => p.displayName ?? p.discordId).join(' · ')}`);
   }
 
-  const text = zeilen.join('\n');
-  return text.length > 1990 ? `${text.slice(0, 1980)}\n…` : text;
+  const teile = [...kopf, '', ...zeilen, ...fuss];
+  const text = teile.join('\n');
+
+  // Discord nimmt 2000 Zeichen. Wird es laenger, fliegen Zeilen aus der
+  // Mitte - Kopf und Fuss muessen bleiben, sonst fehlt die Ueberschrift
+  // oder der Hinweis auf die offenen Plaetze.
+  if (text.length <= 1950) return text;
+
+  const rahmen = [...kopf, '', ...fuss].join('\n').length;
+  const behalten = [];
+  let laenge = rahmen;
+  for (const zeile of zeilen) {
+    if (laenge + zeile.length + 1 > 1900) break;
+    behalten.push(zeile);
+    laenge += zeile.length + 1;
+  }
+  const rest = zeilen.length - behalten.length;
+  return [...kopf, '', ...behalten, `-# …und ${rest} weitere`, ...fuss].join('\n');
 }
 
 /**
