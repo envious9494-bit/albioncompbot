@@ -208,9 +208,12 @@ auf `Eingeloggt als` im Journal. Kommt die Meldung nicht, schlägt es fehl.
 | `/waffen` | alle | Fragebogen: Kategorie wählen, ankreuzen, Skill per Knopf setzen |
 | `/timer <comp> <zeit>` | Offis | Timer mit Anmeldung erstellen |
 | `/event abmeldungen` | Offis | Wer hat zugesagt und dann abgesagt — nur für dich sichtbar |
+| `/event einfrieren` | Offis | Aufstellung sofort schließen, ohne auf die Sperrfrist zu warten |
 | `/event absagen` | Ersteller | Timer absagen |
 
-Dieselben zwei Event-Funktionen gibt es auch als Knopf unter dem Timer.
+„Absagen" und „Abmeldungen" gibt es zusätzlich als Knopf unter dem Timer.
+`einfrieren` bewusst nur als Befehl: es pingt die halbe Gilde, das soll niemand
+aus Versehen anklicken.
 
 Das Feld *zeit* bei `/timer` versteht:
 

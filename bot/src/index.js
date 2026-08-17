@@ -185,6 +185,18 @@ const commands = [
     )
     .addSubcommand((sub) =>
       sub
+        .setName('einfrieren')
+        .setDescription('Aufstellung sofort schliessen, ohne auf die Sperrfrist zu warten')
+        .addStringOption((option) =>
+          option
+            .setName('timer')
+            .setDescription('Welcher Timer')
+            .setRequired(true)
+            .setAutocomplete(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
         .setName('absagen')
         .setDescription('Einen Timer absagen - nur wer ihn erstellt hat')
         .addStringOption((option) =>
@@ -633,6 +645,36 @@ async function handleCommand(interaction) {
         flags: MessageFlags.Ephemeral,
         allowedMentions: { parse: [] },
       });
+      return;
+    }
+
+    if (interaction.options.getSubcommand() === 'einfrieren') {
+      if (!(await isOfficer(interaction))) {
+        await interaction.reply({
+          content: 'Einfrieren dürfen nur Offiziere.',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      if (event.status !== 'open') {
+        await interaction.reply({
+          content:
+            event.status === 'locked'
+              ? 'Die Aufstellung steht schon.'
+              : 'Der Timer ist abgesagt.',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      // Erst antworten, dann einfrieren: lockAndAnnounce rechnet neu und
+      // schickt den Ping, das dauert laenger als die drei Sekunden, die
+      // Discord einer Interaktion zugesteht.
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      await lockAndAnnounce(eventId);
+      await interaction.editReply(
+        `Aufstellung von Timer #${eventId} steht — der Ping ist raus.`,
+      );
       return;
     }
 
