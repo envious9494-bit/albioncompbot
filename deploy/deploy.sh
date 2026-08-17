@@ -17,6 +17,10 @@
 set -euo pipefail
 
 HOST="${HOST:-root@116.203.249.88}"
+# Der Standardschluessel wird von diesem Server abgewiesen. Ohne diese Zeile
+# scheitert jeder Deploy mit "Permission denied (publickey)".
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/orbit_deploy}"
+ssh() { command ssh -i "$SSH_KEY" -o BatchMode=yes "$@"; }
 ZIEL="${ZIEL:-/opt/albion-bot}"
 DIENST="albion-bot"
 
