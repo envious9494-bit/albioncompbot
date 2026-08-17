@@ -16,11 +16,16 @@ Leute, die sie am besten spielen.
 Drei Teile, die sich eine Datenbank teilen. Einen direkten Draht zwischen Bot und
 Dashboard gibt es nicht — die Datenbank ist die Verbindung.
 
-| Ordner       | Was            | Läuft auf                 |
-| ------------ | -------------- | ------------------------- |
-| `bot/`       | Discord-Bot    | bot-hosting.net           |
-| `dashboard/` | Weboberfläche  | Vercel                    |
-| `db/`        | Schema         | Supabase (Postgres)       |
+| Ordner | Was | Läuft als |
+| --- | --- | --- |
+| `bot/` | Discord-Bot | Dienst `albion-bot` |
+| `dashboard/` | Weboberfläche | Dienst `albion-dashboard`, hinter Caddy |
+| `db/` | Schema und Migrationen | lokale Postgres |
+| `deploy/` | Dienste, Caddy-Block, Ausliefern | — |
+
+Alles drei liegt auf einem eigenen Server (Hetzner, neben einem anderen
+Projekt). Vorher lag der Bot auf bot-hosting.net, das Dashboard auf Vercel und
+die Datenbank bei Supabase — dazu unten unter *Warum ein eigener Server*.
 
 ## Wie die Zuordnung funktioniert
 
@@ -49,39 +54,30 @@ höchsten Gesamtsumme über alle Slots (Ungarischer Algorithmus, siehe
 
 ## Einrichtung
 
-### 1. Datenbank (Supabase)
+### 1. Datenbank
 
-> Für das eingerichtete Projekt ist das **komplett erledigt** —
-> 9 Tabellen mit RLS, alle Migrationen eingespielt, 139 Waffen importiert.
-> Bot und Dashboard sind darauf umgestellt. Diese Anleitung gilt für ein
-> neues Projekt.
+Eine Postgres, erreichbar nur über `localhost` — Bot und Dashboard laufen auf
+demselben Rechner, von außen muss niemand herankommen.
 
-1. Auf [supabase.com](https://supabase.com) ein Projekt anlegen.
-2. Im **SQL Editor** den Inhalt von `db/schema.sql` einfügen und ausführen —
-   das legt alle Tabellen an. Die Waffen kommen später per Knopfdruck im
-   Dashboard dazu.
-   Bei einer Datenbank, die schon vor diesen Nachträgen angelegt wurde,
-   zusätzlich `db/002_bot_status.sql` bis `db/011_comp_bild_ping.sql` der Reihe
-   nach einspielen.
-3. Beim Ausführen fragt Supabase nach **Row Level Security**. Antwort:
-   *Run and enable RLS*. Warum das wichtig ist, steht unten.
-4. Oben auf **Connect → Direct connection string → Transaction pooler** und den
-   String kopieren. Das `[YOUR-PASSWORD]` durch das echte Datenbank-Passwort
-   ersetzen — das ist das, was du bei der Projekterstellung gesetzt hast.
-   Supabase zeigt es nachträglich nicht mehr an; wenn es weg ist, unter
-   *Database → Settings → Reset database password* ein neues setzen.
+```bash
+sudo -u postgres createuser --pwprompt albion
+sudo -u postgres createdb -O albion albion
+psql "postgresql://albion:PASSWORT@127.0.0.1:5432/albion" -f db/schema.sql
+```
 
-Der Transaction Pooler (Port 6543) ist die richtige Wahl: die Direktverbindung
-läuft über IPv6, was auf Vercel und bot-hosting.net Ärger macht. Deshalb setzen
-beide Teile `prepare: false` — Prepared Statements kann der Pooler nicht.
+Bei einer Datenbank, die schon vor späteren Nachträgen angelegt wurde,
+zusätzlich `db/002_bot_status.sql` bis `db/012_abmeldungen.sql` der Reihe nach
+einspielen.
 
-**Zu RLS:** Supabase stellt jede Tabelle im Schema `public` zusätzlich über eine
-öffentliche REST-Schnittstelle bereit. Ohne Row Level Security könnte damit
-jeder, der den (absichtlich öffentlichen) anon-Key kennt, alle Waffenprofile und
-Aufstellungen lesen und ändern. Mit aktivem RLS und ohne Policies kommen `anon`
-und `authenticated` an gar nichts. Bot und Dashboard verbinden sich als Rolle
-`postgres`, die RLS ohnehin umgeht (`rolbypassrls`) — für sie ändert sich also
-nichts.
+In beiden `.env` dann:
+
+```
+DATABASE_URL=postgresql://albion:PASSWORT@127.0.0.1:5432/albion
+PGSSL=disable
+```
+
+`PGSSL=disable`, weil die Verbindung den Rechner nie verlässt. Ohne das
+verlangt der Treiber TLS und die Verbindung scheitert.
 
 ### 2. Discord-App
 
@@ -103,9 +99,9 @@ Entwicklermodus an sein.
 
 **Schon eingestellt:**
 
-- Redirect-URLs für `localhost:3100` und `localhost:3000`. Nach dem ersten
-  Deploy kommt `https://DEINE-DOMAIN.vercel.app/api/auth/callback/discord`
-  als dritter Eintrag dazu.
+- Redirect-URLs für `localhost:3100`, `localhost:3000` und die öffentliche
+  Adresse des Dashboards, also `https://DEINE-DOMAIN/api/auth/callback/discord`.
+  Fehlt die letzte, bricht der Login mit „Invalid OAuth2 redirect_uri" ab.
 - Der Bot steht auf **privat** — nur du kannst ihn auf einen Server holen.
   Discord verlangt dafür, dass der Installations-Link unter *Installation* auf
   „Keine" steht; deshalb läuft die Einladung über die URL unten.
@@ -153,34 +149,57 @@ dauert ein paar Sekunden, dann sind sie im Discord da.
 > schreiben dieselbe Timer-Nachricht abwechselnd in ihrem eigenen Stand um und
 > streiten sich um jede Anmeldung — von außen sieht das aus, als würde der Bot
 > zwischen zwei Versionen hin- und herspringen. Der Bot warnt beim Start, wenn
-> das letzte Lebenszeichen jünger als 15 Sekunden ist. Läuft er schon auf
-> bot-hosting.net, ihn lokal also erst starten, wenn er dort gestoppt ist.
+> das letzte Lebenszeichen jünger als 15 Sekunden ist. Läuft er schon auf dem
+> Server, vorher dort stoppen: `systemctl stop albion-bot`.
 
 ### 4. Online stellen
 
-**Dashboard → Vercel:** Repo zu GitHub pushen, auf
-[vercel.com](https://vercel.com) mit GitHub anmelden, das Repo importieren.
-Wichtig: als **Root Directory** `dashboard` angeben.
+Beide Teile laufen als systemd-Dienst unter einem eigenen Nutzer; die
+Unit-Dateien liegen in `deploy/`. Das Dashboard hört nur auf `127.0.0.1:3200`
+— von außen kommt ausschließlich Caddy dran, und der bringt TLS mit.
 
-> **Region.** `dashboard/vercel.json` heftet die Serverfunktionen auf `fra1`
-> (Frankfurt), weil die Supabase-Datenbank in `eu-central-1` steht. Ohne das
-> rechnet Vercel in seiner Standardregion `iad1` (Washington) — jede
-> Datenbankabfrage macht dann rund 100 ms Atlantiküberflug, und eine Seite
-> macht mehrere nacheinander. Steht die Datenbank woanders, die Region hier
-> anpassen. Prüfen lässt sich das am Antwort-Header `X-Vercel-Id`: der zweite
-> Teil ist die Region, in der ausgeführt wurde. Alle Werte aus `.env.local`
-als Environment Variables eintragen, `DEV_LOGIN` weglassen. Nach dem ersten
-Deploy die Vercel-Adresse als zweite Redirect-URL im Discord-Portal ergänzen.
+```bash
+bash deploy/deploy.sh
+```
 
-**Bot → bot-hosting.net:** Deployment mit Quelle *GitHub* aus diesem Repo
-anlegen, Runtime Node.js. Zwei Einstellungen entscheiden, ob er startet:
+Das legt beim ersten Mal Nutzer und Dienste an, danach liefert es nur noch aus.
+Was der Server braucht: Node ≥ 20, Postgres, Caddy.
 
-- **Startup → Entry file:** `bot/src/index.js` — nicht die Vorgabe `index.js`,
-  der Einstiegspunkt liegt hier eine Ebene tiefer. Dafür gibt es die
-  `package.json` in der Wurzel: ohne sie fände der Hoster weder Abhängigkeiten
-  noch einen Startbefehl.
-- **Env → Raw .env:** den Inhalt von `bot/.env` einfügen. `DASHBOARD_URL` auf
-  die Vercel-Adresse zeigen lassen.
+**Caddy.** `deploy/albion.caddy` enthält den Block für das Dashboard. Er wird
+per `import` eingebunden, statt in die Hauptdatei geschrieben zu werden — auf
+demselben Server liegt noch ein anderes Projekt, und ein Fehler hier soll das
+nicht mitreißen:
+
+```
+import /etc/caddy/albion.caddy
+```
+
+Vor dem Neuladen `caddy validate --config /etc/caddy/Caddyfile` laufen lassen.
+
+> **Logdatei vorher anlegen.** Caddy darf sich seine Logdatei nicht selbst
+> erzeugen; der Reload scheitert sonst mit „permission denied", und `caddy
+> validate` merkt das nicht — es öffnet keine Dateien.
+>
+> ```bash
+> install -o caddy -g caddy -m 644 /dev/null /var/log/caddy/albion.log
+> ```
+
+**DNS.** Ein `A`- und ein `AAAA`-Eintrag der Subdomain auf den Server. Sobald
+sie auflösen, holt Caddy das Zertifikat von Let's Encrypt selbst.
+
+### Warum ein eigener Server
+
+Anfangs lag der Bot auf bot-hosting.net, das Dashboard auf Vercel und die
+Datenbank bei Supabase. Das ist am Serverless-Modell gescheitert: Vercel
+friert eine Funktion nach der Antwort ein, ohne ihre Postgres-Verbindung zu
+schließen. Die blieb halboffen stehen und hielt Sperren; die Abfragen des Bots
+liefen in `statement timeout` (Fehler 57014), und weil das Lebenszeichen als
+Erstes geschrieben wird, wirkte er dabei kerngesund — nur aktualisierte kein
+Timer mehr und keine Anmeldung kam an.
+
+Ein Prozess, der einfach durchläuft, kennt das Problem nicht. Nebenbei
+verschwand die zweite Hälfte: vorher rechnete Vercel in Washington gegen eine
+Datenbank in Frankfurt, jede Abfrage ein Atlantiküberflug.
 
 ### Ausliefern
 
@@ -444,16 +463,24 @@ Löschen nur deaktiviert — sonst würde es bestehende Aufstellungen zerreißen
 ## Tests
 
 ```bash
-cd bot && node --test test/matching.test.js
+npm test
 ```
 
-Prüft den Zuordnungsalgorithmus: dass das globale Optimum die gierige Variante
-schlägt, dass Prioritäten greifen, dass Festlegungen gewinnen und dass niemand
-auf zwei Slots landet.
+92 Tests, ohne Datenbank und ohne Discord — sie laufen in zwei Sekunden und
+sind Teil des Ausliefern-Skripts: schlagen sie fehl, geht nichts auf den
+Server.
+
+Geprüft werden die Stellen, an denen stille Fehler wehtun: die Zuordnung (dass
+das globale Optimum die gierige Variante schlägt, dass Prioritäten greifen,
+dass niemand auf zwei Plätzen landet, dass Waffen-Alternativen zählen), die
+Zeitangaben bei `/timer`, und vor allem die Grenzen von Discord — 1024 Zeichen
+je Embed-Feld, 2000 je Nachricht. Genau daran ist der Fragebogen schon einmal
+gescheitert, ohne dass jemand einen Fehler gesehen hätte.
 
 ## Lokale Testdatenbank
 
-Statt Supabase kann lokal eine Postgres im Docker laufen:
+Zum Entwickeln auf dem eigenen Rechner, ohne die Datenbank des Servers
+anzufassen:
 
 ```bash
 docker run -d --name albion-pg -e POSTGRES_PASSWORD=albion -e POSTGRES_DB=albion -p 55432:5432 postgres:16-alpine
@@ -467,8 +494,9 @@ docker exec -i albion-pg psql -U postgres -d albion < db/schema.sql
 
 In `.env.local` dann `DATABASE_URL=postgres://postgres:albion@localhost:55432/albion`
 und `PGSSL=disable` setzen. Mit `DEV_LOGIN=1` gibt es auf der Startseite einen
-Test-Login ohne Discord — der funktioniert ausschließlich lokal und lässt sich
-auf Vercel technisch nicht einschalten.
+Test-Login ohne Discord. Der ist bewusst nur für die Entwicklung: auf dem
+Server steht `DEV_LOGIN` leer, und `deploy.sh` fasst die `.env.local` dort
+nicht an.
 
 Wieder loswerden:
 
