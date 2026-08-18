@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatAmount, parseAmount, renderBooking, renderLeaderboard } from '../src/balance.js';
+import {
+  formatAmount,
+  parseAmount,
+  renderBalance,
+  renderBooking,
+  renderLeaderboard,
+} from '../src/balance.js';
 
 test('einfache Zahlen', () => {
   assert.equal(parseAmount('500'), 500n);
@@ -110,4 +116,37 @@ test('Buchung: Abziehen sieht anders aus als Hinzufuegen', () => {
   assert.match(raus.description, /abgezogen/);
   assert.doesNotMatch(raus.description, /hinzugefügt/);
   assert.notEqual(rein.color, raus.color);
+});
+
+test('Kontostand: Person steht als Autor oben, mit Bild', () => {
+  const daten = renderBalance({
+    person: { name: 'paladingeimo', avatarUrl: 'https://cdn.discordapp.com/avatars/1/a.png' },
+    saldo: 4533335n,
+    rang: 6,
+  }).toJSON();
+
+  assert.equal(daten.author.name, 'paladingeimo');
+  assert.match(daten.author.icon_url, /avatars/);
+});
+
+test('Kontostand: Betrag und Platz stehen nebeneinander', () => {
+  const daten = renderBalance({ person: { name: 'X' }, saldo: 4533335n, rang: 6 }).toJSON();
+  const gold = daten.fields.find((f) => f.name === 'Gold');
+  const platz = daten.fields.find((f) => f.name === 'Platz');
+
+  assert.match(gold.value, /4\.533\.335/);
+  assert.match(platz.value, /6\./);
+  assert.ok(gold.inline && platz.inline, 'nebeneinander, nicht untereinander');
+});
+
+test('Kontostand: ohne Gold kein Platz, dafuer eine Erklaerung', () => {
+  const daten = renderBalance({ person: { name: 'X' }, saldo: 0n, rang: null }).toJSON();
+  assert.ok(!daten.fields.some((f) => f.name === 'Platz'), 'kein leerer Platz');
+  assert.match(daten.description, /kein Platz in der Rangliste/);
+});
+
+test('Kontostand: kommt ohne Avatar aus', () => {
+  const daten = renderBalance({ person: { name: 'X' }, saldo: 5n, rang: 1 }).toJSON();
+  assert.equal(daten.author.name, 'X');
+  assert.equal(daten.author.icon_url, undefined);
 });

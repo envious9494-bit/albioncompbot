@@ -39,6 +39,7 @@ import {
   buildLeaderboard,
   canManageBalance,
   getBalance,
+  getRank,
   isBalanceEnabled,
   listBalanceManagers,
   parseAmount,
@@ -559,6 +560,19 @@ async function stillVerwerfen(interaction) {
   await interaction.deleteReply().catch(() => {});
 }
 
+/**
+ * Name und Avatar fuer die Anzeige. Servername schlaegt globalen Namen,
+ * genau wie ueberall sonst im Discord - und das Serverbild schlaegt das
+ * globale, falls jemand hier ein anderes benutzt.
+ */
+function personFuerAnzeige(guild, user) {
+  const mitglied = guild?.members.cache.get(user.id);
+  return {
+    name: mitglied?.nickname ?? user.globalName ?? user.username,
+    avatarUrl: mitglied?.displayAvatarURL?.({ size: 128 }) ?? user.displayAvatarURL({ size: 128 }),
+  };
+}
+
 async function handleCommand(interaction) {
   if (interaction.commandName === 'leaderboard') {
     if (!(await isBalanceEnabled(interaction.guildId))) {
@@ -581,9 +595,12 @@ async function handleCommand(interaction) {
 
     if (unterbefehl === 'zeigen') {
       const ziel = interaction.options.getUser('spieler') ?? interaction.user;
-      const saldo = await getBalance(interaction.guildId, ziel.id);
+      const [saldo, rang] = await Promise.all([
+        getBalance(interaction.guildId, ziel.id),
+        getRank(interaction.guildId, ziel.id),
+      ]);
       await interaction.reply({
-        embeds: [renderBalance(ziel.id, saldo, ziel.id === interaction.user.id)],
+        embeds: [renderBalance({ person: personFuerAnzeige(interaction.guild, ziel), saldo, rang })],
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -1045,9 +1062,12 @@ async function handlePrefixCommand(message) {
   if (aktion !== 'add' && aktion !== 'remove') {
     const erwaehnt = message.mentions.users.first();
     const ziel = erwaehnt ?? message.author;
-    const saldo = await getBalance(message.guildId, ziel.id);
+    const [saldo, rang] = await Promise.all([
+      getBalance(message.guildId, ziel.id),
+      getRank(message.guildId, ziel.id),
+    ]);
     await message.reply({
-      embeds: [renderBalance(ziel.id, saldo, ziel.id === message.author.id)],
+      embeds: [renderBalance({ person: personFuerAnzeige(message.guild, ziel), saldo, rang })],
       allowedMentions: { parse: [] },
     });
     return;

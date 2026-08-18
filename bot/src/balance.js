@@ -208,13 +208,32 @@ export function renderBooking({ menge, abziehen, zielId, saldo, grund }) {
     .setDescription(zeilen.join('\n'));
 }
 
-/** Kontostand einer Person. */
-export function renderBalance(zielId, saldo, selbst) {
-  return new EmbedBuilder()
+/**
+ * Kontostand einer Person - mit Avatar, Name und Platz.
+ *
+ * Die Person steht als Autor oben, nicht als Erwaehnung im Text: so sieht
+ * man auf einen Blick, wessen Stand das ist, ohne den Satz zu lesen.
+ *
+ * Bewusst ein Betrag statt Cash/Bank/Total: getrennte Toepfe ergeben nur
+ * Sinn, wenn man dazwischen umbuchen kann. Zwei Felder mit derselben Zahl
+ * waeren nur Zierde.
+ *
+ * @param person  {{ name, avatarUrl }}
+ * @param rang    Platz in der Rangliste, oder null bei leerem Konto
+ */
+export function renderBalance({ person, saldo, rang }) {
+  const embed = new EmbedBuilder()
     .setColor(FARBE_GOLD)
-    .setDescription(
-      `${selbst ? 'Du hast' : `<@${zielId}> hat`} **${formatAmount(saldo)}** ${GOLD}`,
-    );
+    .setAuthor({ name: person.name, iconURL: person.avatarUrl ?? undefined })
+    .addFields({ name: 'Gold', value: `${GOLD} **${formatAmount(saldo)}**`, inline: true });
+
+  if (rang) {
+    embed.addFields({ name: 'Platz', value: `**${rang}.**`, inline: true });
+  } else if (saldo === 0n) {
+    embed.setDescription('-# Noch kein Gold - deshalb auch kein Platz in der Rangliste.');
+  }
+
+  return embed;
 }
 
 export function leaderboardButtons(seite, seiten) {
