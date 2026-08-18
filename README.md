@@ -228,6 +228,9 @@ auf `Eingeloggt als` im Journal. Kommt die Meldung nicht, schlägt es fehl.
 | `/timer <comp> <zeit>` | Offis | Timer mit Anmeldung erstellen |
 | `/event abmeldungen` | Offis | Wer hat zugesagt und dann abgesagt — nur für dich sichtbar |
 | `/event einfrieren` | Offis | Aufstellung sofort schließen, ohne auf die Sperrfrist zu warten |
+| `/balance erlauben <@person>` | Offis | Erlaubt jemandem, Gold zu vergeben und abzuziehen |
+| `/balance entziehen <@person>` | Offis | Nimmt das Recht wieder weg |
+| `/balance wer` | Offis | Wer darf Gold vergeben? |
 | `/event absagen` | Ersteller | Timer absagen |
 
 „Absagen" und „Abmeldungen" gibt es zusätzlich als Knopf unter dem Timer.

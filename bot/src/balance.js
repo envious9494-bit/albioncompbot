@@ -323,3 +323,39 @@ export async function resolveMember(message, roh) {
     fehler: `„${text}" finde ich hier nicht. Erwähne die Person mit @ — das ist ohnehin sicherer als der Name.`,
   };
 }
+
+// ---------------------------------------------------------------------
+//  Wer Gold vergeben darf
+// ---------------------------------------------------------------------
+
+/**
+ * Traegt jemanden als Balance-Verwalter ein.
+ *
+ * Das Recht haengt bewusst nicht am Dashboard-Zugang: ein Caller soll Gold
+ * verteilen koennen, ohne an Comps zu duerfen.
+ */
+export async function addBalanceManager(guildId, discordId, displayName, addedBy) {
+  await sql`
+    insert into balance_manager (guild_id, discord_id, display_name, added_by)
+    values (${guildId}, ${discordId}, ${displayName}, ${addedBy})
+    on conflict (guild_id, discord_id) do update
+      set display_name = coalesce(excluded.display_name, balance_manager.display_name)
+  `;
+}
+
+/** @returns {boolean} false, wenn die Person gar nicht eingetragen war */
+export async function removeBalanceManager(guildId, discordId) {
+  const weg = await sql`
+    delete from balance_manager where guild_id = ${guildId} and discord_id = ${discordId}
+  `;
+  return weg.count > 0;
+}
+
+export async function listBalanceManagers(guildId) {
+  return sql`
+    select discord_id, display_name
+    from balance_manager
+    where guild_id = ${guildId}
+    order by lower(coalesce(display_name, discord_id))
+  `;
+}

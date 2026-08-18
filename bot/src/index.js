@@ -34,14 +34,17 @@ import {
   upsertPlayer,
 } from './db.js';
 import {
+  addBalanceManager,
   adjustBalance,
   buildLeaderboard,
   canManageBalance,
   getBalance,
   isBalanceEnabled,
+  listBalanceManagers,
   parseAmount,
   PREFIX,
   renderBalance,
+  removeBalanceManager,
   renderBooking,
   resolveMember,
 } from './balance.js';
@@ -158,6 +161,28 @@ const commands = [
           option.setName('menge').setDescription('z.B. 500, 1.5k oder 2m').setRequired(true),
         )
         .addStringOption((option) => option.setName('grund').setDescription('Warum')),
+    )
+    // Wer darf vergeben und abziehen. Bewusst eine Nutzer-Auswahl statt
+    // eines Namensfelds: Discord liefert damit die ID direkt, es gibt keine
+    // Namenssuche und keine Verwechslung bei zwei aehnlichen Namen.
+    .addSubcommand((sub) =>
+      sub
+        .setName('erlauben')
+        .setDescription('Jemandem erlauben, Gold zu vergeben und abzuziehen')
+        .addUserOption((option) =>
+          option.setName('spieler').setDescription('Wer darf').setRequired(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('entziehen')
+        .setDescription('Das Recht wieder wegnehmen')
+        .addUserOption((option) =>
+          option.setName('spieler').setDescription('Wem').setRequired(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub.setName('wer').setDescription('Wer darf Gold vergeben?'),
     )
     .toJSON(),
 
@@ -564,6 +589,62 @@ async function handleCommand(interaction) {
       return;
     }
 
+    // Wer das Recht VERGIBT, muss Offizier sein - nicht bloss selbst
+    // Verwalter. Sonst koennte ein Caller weitere Caller ernennen, und
+    // niemand haette das mehr in der Hand.
+    if (['erlauben', 'entziehen', 'wer'].includes(unterbefehl)) {
+      if (!(await isOfficer(interaction))) {
+        await interaction.reply({
+          content: 'Wer Gold vergeben darf, bestimmen nur Offiziere.',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      if (unterbefehl === 'wer') {
+        const manager = await listBalanceManagers(interaction.guildId);
+        await interaction.reply({
+          content: manager.length
+            ? [
+                `**${manager.length} ${manager.length === 1 ? 'Person darf' : 'Personen duerfen'} Gold vergeben:**`,
+                ...manager.map((m) => `<@${m.discord_id}>`),
+                '-# Dazu jeder mit dem Recht Server verwalten.',
+              ].join('\n')
+            : 'Namentlich niemand - nur wer Server verwalten hat.',
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: { parse: [] },
+        });
+        return;
+      }
+
+      const ziel = interaction.options.getUser('spieler', true);
+      if (ziel.bot) {
+        await interaction.reply({ content: 'Bots brauchen kein Gold.', flags: MessageFlags.Ephemeral });
+        return;
+      }
+
+      const name =
+        interaction.guild?.members.cache.get(ziel.id)?.nickname ?? ziel.globalName ?? ziel.username;
+
+      if (unterbefehl === 'erlauben') {
+        await addBalanceManager(interaction.guildId, ziel.id, name, interaction.user.id);
+        await interaction.reply({
+          content: `<@${ziel.id}> darf jetzt Gold vergeben und abziehen.`,
+          allowedMentions: { parse: [] },
+        });
+      } else {
+        const weg = await removeBalanceManager(interaction.guildId, ziel.id);
+        await interaction.reply({
+          content: weg
+            ? `<@${ziel.id}> darf kein Gold mehr vergeben.`
+            : `<@${ziel.id}> stand gar nicht auf der Liste.`,
+          flags: weg ? undefined : MessageFlags.Ephemeral,
+          allowedMentions: { parse: [] },
+        });
+      }
+      return;
+    }
+
     const darf = await canManageBalance(
       interaction.guildId,
       interaction.user.id,
@@ -571,7 +652,7 @@ async function handleCommand(interaction) {
     );
     if (!darf) {
       await interaction.reply({
-        content: 'Du darfst kein Gold vergeben. Wer das darf, steht im Dashboard unter „Balance".',
+        content: 'Du darfst kein Gold vergeben. Ein Offizier kann dich mit `/balance erlauben` freischalten.',
         flags: MessageFlags.Ephemeral,
       });
       return;
