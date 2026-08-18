@@ -422,6 +422,18 @@ mehr ausgewertet.
 Freigeschaltete sehen alles ihres Servers: Comps, Events und die Waffenprofile
 aller Member. Andere Server bleiben unsichtbar.
 
+> **Der Zugang gilt auch im Discord.** Wer unter *Zugang* steht, zählt für den
+> Bot als Offizier — kann also `/timer` setzen, `/event einfrieren`, die
+> Abmeldungen sehen und mit `/balance erlauben` bestimmen, wer Gold verteilt.
+> Auch ohne „Server verwalten" auf dem Discord.
+>
+> Das ist Absicht: die Liste ist die Offiziersliste der Gilde, nicht bloß eine
+> Login-Erlaubnis. Es überrascht trotzdem — wer jemanden nur zum Comps-Bauen
+> hereinlassen will, gibt ihm damit mehr, als er denkt.
+>
+> Wer das getrennt haben will, braucht ein eigenes Häkchen je Person; die
+> Prüfung sitzt an einer Stelle (`isOfficer` in `bot/src/index.js`).
+
 Unter *Spieler* lässt sich der **Skill fremder Waffen nachbessern** — für den
 Fall, dass sich jemand falsch einschätzt. `—` nimmt die Waffe aus dem Profil.
 Neue Waffen kann dort niemand *hinzufügen*: eintragen tut jeder selbst mit
